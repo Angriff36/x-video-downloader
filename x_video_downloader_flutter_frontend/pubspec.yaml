@@ -54,6 +54,7 @@ dependencies:
   share_plus: ^10.1.4
   flutter_appauth: ^8.0.2
   flutter_secure_storage: ^10.0.0-beta.4
+  flutter_inappwebview: ^6.0.0
   connectivity_plus: ^6.1.4
   shared_preferences: ^2.5.3
   fl_chart: ^0.70.2

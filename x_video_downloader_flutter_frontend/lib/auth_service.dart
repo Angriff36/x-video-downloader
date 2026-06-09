@@ -267,6 +267,25 @@ class AuthService extends ChangeNotifier {
   }
 
   /// Save a token to secure storage.
+  /// This can be called directly (e.g., after WebView cookie extraction)
+  /// without going through the OAuth flow.
+  Future<void> saveToken({
+    required String platform,
+    required String accessToken,
+    String? refreshToken,
+    DateTime? expiresAt,
+  }) async {
+    final token = AuthToken(
+      platform: platform,
+      accessToken: accessToken,
+      refreshToken: refreshToken,
+      expiresAt: expiresAt,
+    );
+    await _saveToken(token);
+    notifyListeners();
+  }
+
+  /// Save a token to secure storage.
   Future<void> _saveToken(AuthToken token) async {
     await _storage.write(
       key: '$_storagePrefix${token.platform}',

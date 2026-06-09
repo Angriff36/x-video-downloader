@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'auth_service.dart';
+import 'instagram_login_screen.dart';
 import 'platform_auth_config.dart';
 
 /// Screen for managing platform authentication (login/logout).
@@ -78,6 +79,23 @@ class _AuthSettingsScreenState extends State<AuthSettingsScreen> {
     }
   }
 
+  Future<void> _handleInstagramWebViewLogin() async {
+    setState(() => _errorMessage = null);
+    final result = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => InstagramLoginScreen(authService: widget.authService),
+      ),
+    );
+    if (result == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Instagram connected! You can now download reels and posts.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -126,6 +144,7 @@ class _AuthSettingsScreenState extends State<AuthSettingsScreen> {
                 isLoading: widget.authService.isLoading(config.platform),
                 isAuthenticated: widget.authService.isAuthenticated(config.platform),
                 onLogin: () => _handleLogin(config),
+                onInstagramWebView: () => _handleInstagramWebViewLogin(),
                 onLogout: () => _handleLogout(config.platform),
               )),
           const SizedBox(height: 32),
@@ -149,6 +168,7 @@ class _PlatformCard extends StatelessWidget {
   final bool isLoading;
   final bool isAuthenticated;
   final VoidCallback onLogin;
+  final VoidCallback? onInstagramWebView;
   final VoidCallback onLogout;
 
   const _PlatformCard({
@@ -157,6 +177,7 @@ class _PlatformCard extends StatelessWidget {
     required this.isLoading,
     required this.isAuthenticated,
     required this.onLogin,
+    this.onInstagramWebView,
     required this.onLogout,
   });
 
@@ -189,6 +210,8 @@ class _PlatformCard extends StatelessWidget {
   String get _statusText {
     if (isAuthenticated) return 'Connected';
     if (token != null && token!.isExpired) return 'Expired - tap to reconnect';
+    // Instagram uses WebView login, always "available"
+    if (config.platform == 'instagram') return 'Tap Log In to connect';
     if (!config.isConfigured) return 'Not configured';
     return 'Not connected';
   }
@@ -234,7 +257,9 @@ class _PlatformCard extends StatelessWidget {
                               ? Colors.green
                               : token?.isExpired == true
                                   ? Colors.orange
-                                  : Colors.grey.shade400,
+                                  : config.platform == 'instagram'
+                                      ? Colors.blue
+                                      : Colors.grey.shade400,
                         ),
                       ),
                       const SizedBox(width: 6),
@@ -246,7 +271,9 @@ class _PlatformCard extends StatelessWidget {
                               ? Colors.green
                               : token?.isExpired == true
                                   ? Colors.orange
-                                  : Colors.grey,
+                                  : config.platform == 'instagram'
+                                      ? Colors.blue
+                                      : Colors.grey,
                         ),
                       ),
                     ],
@@ -265,6 +292,16 @@ class _PlatformCard extends StatelessWidget {
               TextButton(
                 onPressed: onLogout,
                 child: const Text('Log Out'),
+              )
+            else if (config.platform == 'instagram')
+              ElevatedButton(
+                onPressed: onInstagramWebView,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _platformColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                ),
+                child: const Text('Log In'),
               )
             else
               ElevatedButton(
