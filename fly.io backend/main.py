@@ -402,15 +402,29 @@ def _extract_tiktok(url: str) -> dict | None:
     """Extract TikTok video info via TikWM API (free, no auth, works from servers)."""
     import requests as _req
     try:
-        # Resolve short URLs first
+        # Resolve short URLs to get the video ID
         if 'vm.tiktok.com' in url or 'vt.tiktok.com' in url:
             resp = _req.head(url, allow_redirects=True, timeout=10,
                              headers={'User-Agent': 'Mozilla/5.0 (Linux; Android 13) Chrome/115.0.0.0 Mobile'})
             url = resp.url
 
-        # Call TikWM API
-        api_url = "https://www.tikwm.com/api/"
-        resp = _req.post(api_url, data={'url': url}, timeout=20, headers={
+        # Extract video ID
+        video_id = None
+        m = re.search(r'/video/(\d+)', url)
+        if m:
+            video_id = m.group(1)
+        if not video_id:
+            logger.warning(f"[TikTok] Could not extract video ID from {url}")
+            return None
+
+        # TikWM needs a URL without the @username — build a clean URL
+        clean_url = f"https://www.tiktok.com/@/video/{video_id}"
+
+        # Call TikWM API via GET
+        resp = _req.get("https://www.tikwm.com/api/", params={
+            'url': clean_url,
+            'hd': '1',
+        }, timeout=20, headers={
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
             'Accept': 'application/json',
         })
@@ -425,9 +439,10 @@ def _extract_tiktok(url: str) -> dict | None:
             return None
 
         video = data['data']
-        video_url = video.get('play') or video.get('wmplay') or video.get('hdplay')
+        # TikWM returns relative URLs like /video/media/play/ID.mp4
+        video_url = video.get('hdplay') or video.get('play') or video.get('wmplay')
         if not video_url:
-            logger.warning(f"[TikTok] TikWM returned no video URL")
+            logger.warning("[TikTok] TikWM returned no video URL")
             return None
 
         # Prepend CDN base if relative URL
@@ -438,7 +453,8 @@ def _extract_tiktok(url: str) -> dict | None:
 
         title = video.get('title', 'TikTok Video')
         thumbnail = video.get('cover') or video.get('origin_cover')
-        video_id = video.get('id', '')
+        if thumbnail and thumbnail.startswith('/'):
+            thumbnail = 'https://www.tikwm.com' + thumbnail
         duration = video.get('duration')
 
         return {
