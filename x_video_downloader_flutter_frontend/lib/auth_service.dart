@@ -281,6 +281,7 @@ class AuthService extends ChangeNotifier {
       refreshToken: refreshToken,
       expiresAt: expiresAt,
     );
+    _tokens[platform] = token;  // Update in-memory map so getValidAccessToken works
     await _saveToken(token);
     notifyListeners();
   }

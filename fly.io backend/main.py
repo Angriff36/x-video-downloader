@@ -470,8 +470,9 @@ def _extract_tiktok(url: str) -> dict | None:
         return None
 
 
-def _extract_instagram(url: str) -> dict | None:
-    """Extract Instagram media info via the embed page, bypassing yt-dlp."""
+def _extract_instagram(url: str, session_id: str | None = None) -> dict | None:
+    """Extract Instagram media info via the embed page, bypassing yt-dlp.
+    If session_id is provided, uses it as a cookie for authenticated access."""
     import requests as _req
     try:
         # Clean URL
@@ -485,16 +486,55 @@ def _extract_instagram(url: str) -> dict | None:
         if len(parts) >= 2:
             shortcode = parts[-1]
 
-        # Method 1: Use Instagram's embed endpoint (publicly accessible)
+        # Build headers — add session cookie if available
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'X-IG-App-ID': '936619743392459',
+            'Referer': 'https://www.instagram.com/',
+        }
+        if session_id:
+            headers['Cookie'] = f'sessionid={session_id}'
+
+        # Method 1: Try the API with __a=1 (works with session cookie)
+        api_url = f"{clean_url}?__a=1&__d=dis"
+        resp = _req.get(api_url, timeout=15, headers=headers)
+        if resp.status_code == 200:
+            try:
+                data = resp.json()
+                items = data.get('items', [])
+                if items:
+                    item = items[0]
+                    video_versions = item.get('video_versions', [])
+                    video_url = video_versions[0].get('url') if video_versions else None
+                    carousel = item.get('carousel_media', [])
+                    title = ''
+                    if item.get('caption') and item['caption'].get('text'):
+                        title = item['caption']['text'][:200]
+                    if not title:
+                        title = f"Instagram {_detect_instagram_content_type(url)}"
+                    image_versions = item.get('image_versions2', {}).get('candidates', [])
+                    thumbnail = image_versions[0].get('url') if image_versions else None
+
+                    if video_url or carousel:
+                        return {
+                            'title': title,
+                            'video_url': video_url,
+                            'thumbnail': thumbnail,
+                            'platform': 'Instagram',
+                            'video_id': item.get('code', shortcode),
+                            'duration': item.get('video_duration'),
+                            'carousel_count': len(carousel) if carousel else (1 if video_url else 0),
+                            'carousel': carousel,
+                        }
+            except Exception:
+                pass
+
+        # Method 2: Use Instagram's embed endpoint
         embed_url = f"https://www.instagram.com/p/{shortcode}/embed/"
         if '/reel/' in clean_url:
             embed_url = f"https://www.instagram.com/reel/{shortcode}/embed/"
-
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.9',
-        }
 
         resp = _req.get(embed_url, timeout=15, headers=headers)
         if resp.status_code == 200:
@@ -1363,7 +1403,9 @@ def download_video(
             if is_tiktok:
                 extracted = _extract_tiktok(url)
             elif is_instagram:
-                extracted = _extract_instagram(url)
+                # Get auth token from request if available
+                auth_token = request.headers.get('x-auth-token') if request else None
+                extracted = _extract_instagram(url, session_id=auth_token)
 
             if extracted and extracted.get('video_url'):
                 import requests as _req
