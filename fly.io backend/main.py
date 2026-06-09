@@ -399,62 +399,83 @@ def _detect_tiktok_content_type(url: str) -> str:
 # --- Custom Platform Extractors (bypass yt-dlp) ---
 
 def _extract_tiktok(url: str) -> dict | None:
-    """Extract TikTok video info directly from the embed page, bypassing yt-dlp."""
+    """Extract TikTok video info via oembed API and page scraping, bypassing yt-dlp."""
     import requests as _req
     try:
-        # Extract video ID from URL
+        # Resolve short URLs first
+        if 'vm.tiktok.com' in url or 'vt.tiktok.com' in url:
+            resp = _req.head(url, allow_redirects=True, timeout=10,
+                             headers={'User-Agent': 'Mozilla/5.0 (Linux; Android 13) Chrome/115.0.0.0 Mobile'})
+            url = resp.url
+
+        # Extract video ID
         video_id = None
         m = re.search(r'/video/(\d+)', url)
         if m:
             video_id = m.group(1)
-        else:
-            # Try short URL resolution
-            resp = _req.head(url, allow_redirects=True, timeout=10,
-                             headers={'User-Agent': 'Mozilla/5.0 (Linux; Android 13) Chrome/115.0.0.0 Mobile'})
-            resolved = resp.url
-            m2 = re.search(r'/video/(\d+)', resolved)
-            if m2:
-                video_id = m2.group(1)
         if not video_id:
             logger.warning(f"[TikTok] Could not extract video ID from {url}")
             return None
 
-        # Fetch the embed page which has video data in the HTML
-        embed_url = f"https://www.tiktok.com/embed/v2/{video_id}"
-        resp = _req.get(embed_url, timeout=15, headers={
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml',
-            'Accept-Language': 'en-US,en;q=0.9',
+        # Use oembed API to get video info
+        oembed_url = f"https://www.tiktok.com/oembed?url=https://www.tiktok.com/@user/video/{video_id}"
+        resp = _req.get(oembed_url, timeout=10, headers={
+            'User-Agent': 'Mozilla/5.0 (compatible; bot)',
         })
-        resp.raise_for_status()
+
+        title = "TikTok Video"
+        thumbnail = None
+        if resp.status_code == 200:
+            try:
+                odata = resp.json()
+                title = odata.get('title', title)
+                thumbnail = odata.get('thumbnail_url')
+            except Exception:
+                pass
+
+        # Fetch the actual video page to extract the video URL
+        page_url = f"https://www.tiktok.com/@placeholder/video/{video_id}"
+        resp = _req.get(page_url, timeout=15, headers={
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Referer': 'https://www.tiktok.com/',
+        })
+
+        if resp.status_code != 200:
+            logger.warning(f"[TikTok] Page returned {resp.status_code} for video {video_id}")
+            return None
+
         html = resp.text
 
-        # Extract video URL from og:video meta tag
+        # Extract video URL from the page's embedded JSON data
         video_url = None
-        og_match = re.search(r'<meta\s+property="og:video(?:\:url)?"[^>]*content="([^"]+)"', html)
-        if og_match:
-            video_url = og_match.group(1).replace('&amp;', '&')
 
-        # Also try to extract from JSON data embedded in the page
+        # Method 1: Look for the video playAddr in the SIGI_STATE or __UNIVERSAL_DATA
+        play_match = re.search(r'"playAddr":"([^"]+)"', html)
+        if play_match:
+            video_url = play_match.group(1).replace('\\u002F', '/').replace('&amp;', '&')
+
+        # Method 2: Look for downloadAddr
         if not video_url:
-            json_match = re.search(r'"playAddr":"([^"]+)"', html)
-            if json_match:
-                video_url = json_match.group(1).replace('\\u002F', '/').replace('&amp;', '&')
+            dl_match = re.search(r'"downloadAddr":"([^"]+)"', html)
+            if dl_match:
+                video_url = dl_match.group(1).replace('\\u002F', '/').replace('&amp;', '&')
 
-        # Extract title
-        title = "TikTok Video"
-        title_match = re.search(r'<meta\s+property="og:title"[^>]*content="([^"]+)"', html)
-        if title_match:
-            title = title_match.group(1)
+        # Method 3: og:video meta tag
+        if not video_url:
+            og_match = re.search(r'<meta\s+property="og:video(?:\:url)?"[^>]*content="([^"]+)"', html)
+            if og_match:
+                video_url = og_match.group(1).replace('&amp;', '&')
 
-        # Extract thumbnail
-        thumbnail = None
-        thumb_match = re.search(r'<meta\s+property="og:image"[^>]*content="([^"]+)"', html)
-        if thumb_match:
-            thumbnail = thumb_match.group(1).replace('&amp;', '&')
+        # Method 4: Look for video src in script tag data
+        if not video_url:
+            src_match = re.search(r'"src":"(https://[^"]*tiktok[^"]*\.mp4[^"]*)"', html)
+            if src_match:
+                video_url = src_match.group(1).replace('\\u002F', '/')
 
         if not video_url:
-            logger.warning(f"[TikTok] No video URL found in embed page for {video_id}")
+            logger.warning(f"[TikTok] No video URL found for {video_id}")
             return None
 
         return {
@@ -471,90 +492,126 @@ def _extract_tiktok(url: str) -> dict | None:
 
 
 def _extract_instagram(url: str) -> dict | None:
-    """Extract Instagram media info directly from the page, bypassing yt-dlp."""
+    """Extract Instagram media info via the embed page, bypassing yt-dlp."""
     import requests as _req
     try:
-        # Clean URL - remove query params
+        # Clean URL
         clean_url = url.split('?')[0]
         if not clean_url.endswith('/'):
             clean_url += '/'
 
+        # Extract shortcode from URL
+        shortcode = ''
+        parts = clean_url.rstrip('/').split('/')
+        if len(parts) >= 2:
+            shortcode = parts[-1]
+
+        # Method 1: Use Instagram's embed endpoint (publicly accessible)
+        embed_url = f"https://www.instagram.com/p/{shortcode}/embed/"
+        if '/reel/' in clean_url:
+            embed_url = f"https://www.instagram.com/reel/{shortcode}/embed/"
+
         headers = {
-            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
             'Accept-Language': 'en-US,en;q=0.9',
-            'X-IG-App-ID': '936619743392459',
-            'Referer': 'https://www.instagram.com/',
         }
 
-        # Try fetching the page with __a=1 for JSON response
-        api_url = f"{clean_url}?__a=1&__d=dis"
-        resp = _req.get(api_url, timeout=15, headers=headers)
+        resp = _req.get(embed_url, timeout=15, headers=headers)
+        if resp.status_code == 200:
+            html = resp.text
 
-        # If we got JSON, parse it
-        if resp.status_code == 200 and 'application/json' in resp.headers.get('content-type', ''):
-            data = resp.json()
-            items = data.get('items', [])
-            if items:
-                item = items[0]
-                video_url = None
-                # Check for video versions
-                video_versions = item.get('video_versions', [])
-                if video_versions:
-                    video_url = video_versions[0].get('url')
-                # Check for carousel
-                carousel = item.get('carousel_media', [])
-                title = item.get('caption', {}).get('text', '') if item.get('caption') else ''
-                if not title:
-                    title = f"Instagram {_detect_instagram_content_type(url)}"
-                thumbnail = None
-                image_versions = item.get('image_versions2', {}).get('candidates', [])
-                if image_versions:
-                    thumbnail = image_versions[0].get('url')
+            # Extract video URL from the embed page
+            video_url = None
 
+            # Look for video source in the embed HTML
+            video_src = re.search(r'<video[^>]*src="([^"]+)"', html)
+            if video_src:
+                video_url = video_src.group(1).replace('&amp;', '&')
+
+            if not video_url:
+                # Look for poster/image as thumbnail at least
+                source_match = re.search(r'<source[^>]*src="([^"]+)"[^>]*type="video/mp4"', html)
+                if source_match:
+                    video_url = source_match.group(1).replace('&amp;', '&')
+
+            if not video_url:
+                # Try finding URL in script data
+                url_match = re.search(r'"video_url":"([^"]+)"', html)
+                if url_match:
+                    video_url = url_match.group(1).replace('\\u002F', '/').replace('&amp;', '&')
+
+            # Extract title
+            title = f"Instagram {_detect_instagram_content_type(url)}"
+            og_title = re.search(r'<meta\s+property="og:title"[^>]*content="([^"]+)"', html)
+            if og_title:
+                title = og_title.group(1)
+
+            # Extract thumbnail
+            thumbnail = None
+            og_img = re.search(r'<meta\s+property="og:image"[^>]*content="([^"]+)"', html)
+            if og_img:
+                thumbnail = og_img.group(1).replace('&amp;', '&')
+            if not thumbnail:
+                poster_match = re.search(r'<video[^>]*poster="([^"]+)"', html)
+                if poster_match:
+                    thumbnail = poster_match.group(1).replace('&amp;', '&')
+
+            if video_url:
                 return {
-                    'title': title[:200],
+                    'title': title,
                     'video_url': video_url,
                     'thumbnail': thumbnail,
                     'platform': 'Instagram',
-                    'video_id': item.get('code', ''),
-                    'duration': item.get('video_duration'),
-                    'carousel_count': len(carousel) if carousel else (1 if video_url else 0),
-                    'carousel': carousel,
+                    'video_id': shortcode,
+                    'duration': None,
+                    'carousel_count': 1,
+                    'carousel': [],
                 }
 
-        # Fallback: fetch the HTML page and extract og:video
-        resp = _req.get(clean_url, timeout=15, headers=headers)
-        resp.raise_for_status()
-        html = resp.text
+        # Method 2: Try fetching the page directly with mobile UA
+        resp = _req.get(clean_url, timeout=15, headers={
+            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1',
+            'Accept': 'text/html,application/xhtml+xml',
+            'X-IG-App-ID': '936619743392459',
+            'Referer': 'https://www.instagram.com/',
+        })
 
-        video_url = None
-        og_match = re.search(r'<meta\s+property="og:video(?:\:url)?"[^>]*content="([^"]+)"', html)
-        if og_match:
-            video_url = og_match.group(1).replace('&amp;', '&')
+        if resp.status_code == 200:
+            html = resp.text
+            video_url = None
 
-        title = "Instagram Post"
-        title_match = re.search(r'<meta\s+property="og:title"[^>]*content="([^"]+)"', html)
-        if title_match:
-            title = title_match.group(1)
+            # Try og:video
+            og_match = re.search(r'<meta\s+property="og:video(?:\:url)?"[^>]*content="([^"]+)"', html)
+            if og_match:
+                video_url = og_match.group(1).replace('&amp;', '&')
 
-        thumbnail = None
-        thumb_match = re.search(r'<meta\s+property="og:image"[^>]*content="([^"]+)"', html)
-        if thumb_match:
-            thumbnail = thumb_match.group(1).replace('&amp;', '&')
+            # Try video_url in JSON data
+            if not video_url:
+                url_match = re.search(r'"video_url":"([^"]+)"', html)
+                if url_match:
+                    video_url = url_match.group(1).replace('\\u002F', '/').replace('&amp;', '&')
 
-        if not video_url:
-            logger.warning(f"[Instagram] No video URL found for {url}")
-            return None
+            title = f"Instagram {_detect_instagram_content_type(url)}"
+            thumbnail = None
+            og_img = re.search(r'<meta\s+property="og:image"[^>]*content="([^"]+)"', html)
+            if og_img:
+                thumbnail = og_img.group(1).replace('&amp;', '&')
 
-        return {
-            'title': title,
-            'video_url': video_url,
-            'thumbnail': thumbnail,
-            'platform': 'Instagram',
-            'video_id': '',
-            'duration': None,
-        }
+            if video_url:
+                return {
+                    'title': title,
+                    'video_url': video_url,
+                    'thumbnail': thumbnail,
+                    'platform': 'Instagram',
+                    'video_id': shortcode,
+                    'duration': None,
+                    'carousel_count': 1,
+                    'carousel': [],
+                }
+
+        logger.warning(f"[Instagram] No video URL found for {url}")
+        return None
     except Exception as e:
         logger.error(f"[Instagram] Custom extraction failed: {e}")
         return None
