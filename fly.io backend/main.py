@@ -1017,9 +1017,8 @@ def probe_url(request: Request, url: str = Query(...)):
         return cached
 
     try:
-        # --- Custom extractors for TikTok/Instagram (bypass yt-dlp) ---
+        # --- Custom extractor for TikTok only (TikWM API, fast, no auth) ---
         is_tiktok = "tiktok.com" in url.lower() or "vm.tiktok.com" in url.lower()
-        is_instagram = "instagram.com" in url.lower()
 
         if is_tiktok:
             extracted = _extract_tiktok(url)
@@ -1044,55 +1043,9 @@ def probe_url(request: Request, url: str = Query(...)):
                 _metadata_cache.put(url, result)
                 return result
 
-        if is_instagram:
-            extracted = _extract_instagram(url)
-            if extracted:
-                carousel = extracted.get('carousel', [])
-                if carousel and len(carousel) > 1:
-                    videos = []
-                    for i, media in enumerate(carousel):
-                        vid_versions = media.get('video_versions', [])
-                        vid_url = vid_versions[0].get('url') if vid_versions else None
-                        img_versions = media.get('image_versions2', {}).get('candidates', [])
-                        thumb = img_versions[0].get('url') if img_versions else extracted.get('thumbnail')
-                        videos.append({
-                            'index': i,
-                            'title': f"{extracted.get('title', 'Instagram Post')} ({i+1}/{len(carousel)})",
-                            'url': url,
-                            'duration': media.get('video_duration'),
-                            'thumbnail': thumb,
-                            'id': media.get('code', str(i)),
-                            'direct_url': vid_url,
-                        })
-                    result = {
-                        'is_group': True,
-                        'group_title': extracted.get('title', 'Instagram Carousel'),
-                        'count': len(videos),
-                        'videos': videos,
-                        'cached': False,
-                        'platform': 'Instagram',
-                        'content_type': 'carousel',
-                    }
-                else:
-                    result = {
-                        'is_group': False,
-                        'group_title': extracted.get('title', ''),
-                        'count': 1,
-                        'videos': [{
-                            'index': 0,
-                            'title': extracted.get('title', 'Instagram Post'),
-                            'url': url,
-                            'duration': extracted.get('duration'),
-                            'thumbnail': extracted.get('thumbnail'),
-                            'id': extracted.get('video_id', ''),
-                            'direct_url': extracted.get('video_url'),
-                        }],
-                        'cached': False,
-                        'platform': 'Instagram',
-                        'content_type': _detect_instagram_content_type(url),
-                    }
-                _metadata_cache.put(url, result)
-                return result
+        # --- Instagram: skip custom extractor, go straight to yt-dlp with session cookie ---
+        # The custom extractor is slow and doesn't work from servers without auth.
+        # yt-dlp with player_client=android + session cookie is the reliable path.
 
         # --- Fallback to yt-dlp for all other platforms ---
         ydl_opts = {
@@ -1394,19 +1347,13 @@ def download_video(
         url = _normalize_tiktok_url(url)
 
     try:
-        # Custom download for TikTok/Instagram using direct URL
+        # Custom download for TikTok using TikWM
         is_tiktok = "tiktok.com" in url.lower() or "vm.tiktok.com" in url.lower()
         is_instagram = "instagram.com" in url.lower()
 
-        if is_tiktok or is_instagram:
-            extracted = None
-            if is_tiktok:
-                extracted = _extract_tiktok(url)
-            elif is_instagram:
-                # Get auth token from request if available
-                auth_token = request.headers.get('x-auth-token') if request else None
-                extracted = _extract_instagram(url, session_id=auth_token)
-
+        # TikTok: always use TikWM (fast, no auth needed)
+        if is_tiktok:
+            extracted = _extract_tiktok(url)
             if extracted and extracted.get('video_url'):
                 import requests as _req
                 video_url = extracted['video_url']
@@ -1416,7 +1363,7 @@ def download_video(
 
                 stream_resp = _req.get(video_url, stream=True, timeout=30, headers={
                     'User-Agent': 'Mozilla/5.0 (Linux; Android 13) Chrome/115.0.0.0 Mobile',
-                    'Referer': 'https://www.tiktok.com/' if is_tiktok else 'https://www.instagram.com/',
+                    'Referer': 'https://www.tiktok.com/',
                 })
                 stream_resp.raise_for_status()
 
@@ -1428,6 +1375,12 @@ def download_video(
                         'X-Accel-Buffering': 'no',
                     },
                 )
+
+        # Instagram: if auth token provided, skip custom extractor and let yt-dlp use it directly
+        # (custom extractor is slow and doesn't work without auth anyway)
+        if is_instagram:
+            auth_token = request.headers.get('x-auth-token') if request else None
+            logger.info(f"[Instagram] Download request, auth token present: {bool(auth_token)}")
 
         if not subtitle_lang and not embed_subtitles:
             direct_response = _direct_stream_response(
