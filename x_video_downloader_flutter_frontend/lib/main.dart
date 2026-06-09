@@ -500,16 +500,23 @@ class _DownloaderScreenState extends State<DownloaderScreen>
     final endpoint = "$_backendBaseUrl/probe?url=${Uri.encodeComponent(url)}";
 
     try {
-      final response = await http
-          .get(Uri.parse(endpoint))
+      // Build request with auth headers for Instagram/TikTok
+      final probeRequest = http.Request('GET', Uri.parse(endpoint));
+      final platform = DownloadRecord.detectPlatform(url);
+      final authToken = await _authService.getValidAccessToken(platform);
+      if (authToken != null) {
+        probeRequest.headers['X-Auth-Token'] = authToken;
+      }
+      final streamedResponse = await http.Client().send(probeRequest)
           .timeout(const Duration(seconds: 30));
+      final responseBody = await streamedResponse.stream.bytesToString();
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+      if (streamedResponse.statusCode == 200) {
+        final data = json.decode(responseBody);
         if (data.containsKey('error')) {
           final apiError = ApiError.fromResponseBody(
-            response.body,
-            statusCode: response.statusCode,
+            responseBody,
+            statusCode: streamedResponse.statusCode,
           );
           setState(() {
             status = apiError.message;
@@ -547,8 +554,8 @@ class _DownloaderScreenState extends State<DownloaderScreen>
         }
       } else {
         final apiError = ApiError.fromResponseBody(
-          response.body,
-          statusCode: response.statusCode,
+          responseBody,
+          statusCode: streamedResponse.statusCode,
         );
         setState(() {
           status = apiError.message;
