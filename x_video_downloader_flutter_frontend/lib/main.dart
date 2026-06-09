@@ -853,6 +853,12 @@ class _DownloaderScreenState extends State<DownloaderScreen>
 
     try {
       final request = http.Request('GET', Uri.parse(endpoint));
+      // Attach auth token if available for the platform
+      final platform = DownloadRecord.detectPlatform(url);
+      final authToken = await _authService.getValidAccessToken(platform);
+      if (authToken != null) {
+        request.headers['X-Auth-Token'] = authToken;
+      }
       final response = await client
           .send(request)
           .timeout(const Duration(seconds: 180));
