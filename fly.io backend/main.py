@@ -560,7 +560,7 @@ def _extract_instagram(url: str) -> dict | None:
         return None
 
 
-
+def _resolve_filename_template(
     template: str,
     info: dict,
     url: str,
