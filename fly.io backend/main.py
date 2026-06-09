@@ -303,6 +303,105 @@ def _sanitize_filename(name: str, max_length: int = 200) -> str:
     return name[:max_length]
 
 
+def _detect_instagram_content_type(url: str) -> str:
+    """Detect the type of Instagram content from the URL.
+
+    Returns: 'post', 'reel', 'story', 'igtv', 'carousel', or 'unknown'
+    """
+    lower = url.lower()
+    # Remove query parameters for cleaner matching
+    clean_url = lower.split('?')[0].split('/')
+
+    if 'stories' in clean_url:
+        return 'story'
+    elif 'reel' in clean_url or '/reel/' in lower:
+        return 'reel'
+    elif 'tv' in clean_url or '/igtv/' in lower:
+        return 'igtv'
+    elif 'p' in clean_url or '/p/' in lower:
+        # Regular posts could be carousels - will be detected during extraction
+        return 'post'
+    return 'unknown'
+
+
+def _normalize_instagram_url(url: str) -> str:
+    """Normalize Instagram URLs to ensure proper extraction.
+
+    Handles various Instagram URL formats:
+    - Regular posts: instagram.com/p/shortcode/
+    - Reels: instagram.com/reel/shortcode/
+    - Stories: instagram.com/stories/username/id
+    - IGTV: instagram.com/tv/shortcode/
+    """
+    url = url.strip()
+    lower = url.lower()
+
+    # Ensure https
+    if not lower.startswith('https://'):
+        if lower.startswith('http://'):
+            url = url.replace('http://', 'https://', 1)
+        else:
+            url = 'https://' + url
+        lower = url.lower()
+
+    # Remove duplicate instagram.com if present
+    url = re.sub(r'(instagram\.com/)*/', r'instagram.com/', url, flags=re.IGNORECASE)
+
+    # Ensure www. is removed for consistency (Instagram works both ways)
+    url = re.sub(r'instagram\.com/', r'www.instagram.com/', url, flags=re.IGNORECASE)
+
+    return url
+
+
+def _normalize_tiktok_url(url: str) -> str:
+    """Normalize TikTok URLs to ensure proper extraction.
+
+    Handles various TikTok URL formats:
+    - Full URLs: tiktok.com/@username/video/1234567890
+    - Short URLs: vm.tiktok.com/Zxxxx
+    - Embed URLs: tiktok.com/embed/v2/1234567890
+    """
+    url = url.strip()
+    lower = url.lower()
+
+    # Ensure https
+    if not lower.startswith('https://'):
+        if lower.startswith('http://'):
+            url = url.replace('http://', 'https://', 1)
+        else:
+            url = 'https://' + url
+        lower = url.lower()
+
+    # Handle vm.tiktok.com short links - they should be resolved by yt-dlp
+    # but we can ensure they're properly formatted
+    if 'vm.tiktok.com' in lower or 'vt.tiktok.com' in lower:
+        # Short links are fine as-is, yt-dlp will resolve them
+        return url
+
+    # Ensure www. for consistency
+    if 'tiktok.com' in lower and not url.startswith('https://www.'):
+        url = re.sub(r'tiktok\.com', r'www.tiktok.com', url, flags=re.IGNORECASE)
+
+    return url
+
+
+def _detect_tiktok_content_type(url: str) -> str:
+    """Detect the type of TikTok content from the URL.
+
+    Returns: 'video', 'story', 'live', or 'unknown'
+    """
+    lower = url.lower()
+    clean_url = lower.split('?')[0].split('/')
+
+    if 'live' in clean_url:
+        return 'live'
+    elif 'story' in clean_url:
+        return 'story'
+    elif 'video' in clean_url or '/v/' in lower or '/@' in lower:
+        return 'video'
+    return 'unknown'
+
+
 def _resolve_filename_template(
     template: str,
     info: dict,
@@ -460,14 +559,30 @@ def _get_headers(url: str) -> dict:
 
     if "x.com" in lower_url or "twitter.com" in lower_url or "vimeo.com" in lower_url:
         user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    elif "instagram.com" in lower_url:
+        # Instagram requires specific headers for better compatibility
+        user_agent = "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1"
     else:
         user_agent = "Mozilla/5.0 (Linux; Android 13; Pixel 7 Pro Build/TQ2A.230505.002) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36"
 
-    return {
+    headers = {
         'User-Agent': user_agent,
         'Referer': referer,
         'Accept-Language': 'en-US,en;q=0.9',
     }
+
+    # Add Instagram-specific headers
+    if "instagram.com" in lower_url:
+        headers.update({
+            'X-IG-App-ID': '936619743392459',  # Public Instagram app ID
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': '*/*',
+            'Sec-Fetch-Dest': 'empty',
+            'Sec-Fetch-Mode': 'cors',
+            'Sec-Fetch-Site': 'same-origin',
+        })
+
+    return headers
 
 
 def _apply_auth_to_opts(ydl_opts: dict, request: Request, url: str) -> dict:
@@ -495,7 +610,14 @@ def _apply_auth_to_opts(ydl_opts: dict, request: Request, url: str) -> dict:
     if "x.com" in url or "twitter.com" in url:
         ydl_opts['http_headers']['Cookie'] = f'auth_token={auth_token}'
     elif "instagram.com" in url:
+        # Instagram requires multiple cookies for proper authentication
+        # sessionid is the primary auth cookie
         ydl_opts['http_headers']['Cookie'] = f'sessionid={auth_token}'
+        # Add Instagram-specific extractor options when auth is present
+        ydl_opts['extractor_args'] = ydl_opts.get('extractor_args', {})
+        ydl_opts['extractor_args']['instagram'] = [
+            'player_client=android',
+        ]
     elif "tiktok.com" in url:
         ydl_opts['http_headers']['Cookie'] = f'sessionid={auth_token}'
 
@@ -579,6 +701,11 @@ def _direct_stream_response(
     }
     if "dailymotion.com" in url:
         ydl_opts['force_generic_extractor'] = True
+    elif "tiktok.com" in url or "vm.tiktok.com" in url:
+        ydl_opts['extractor_args'] = ydl_opts.get('extractor_args', {})
+        ydl_opts['extractor_args']['tiktok'] = [
+            'player_client=android',
+        ]
     if request:
         _apply_auth_to_opts(ydl_opts, request, url)
 
@@ -632,6 +759,12 @@ def probe_url(request: Request, url: str = Query(...)):
     if not url.startswith(("http://", "https://")):
         return _error_response(ErrorCode.INVALID_URL)
 
+    # Normalize URLs for better extraction
+    if "instagram.com" in url.lower():
+        url = _normalize_instagram_url(url)
+    elif "tiktok.com" in url.lower():
+        url = _normalize_tiktok_url(url)
+
     # Check metadata cache first
     cached = _metadata_cache.get(url)
     if cached is not None:
@@ -651,8 +784,22 @@ def probe_url(request: Request, url: str = Query(...)):
 
         _apply_auth_to_opts(ydl_opts, request, url)
 
+        # Platform-specific extractor options
         if "dailymotion.com" in url:
             ydl_opts['force_generic_extractor'] = True
+        elif "instagram.com" in url:
+            # Instagram-specific options for better carousel and story detection
+            ydl_opts['extractor_args'] = ydl_opts.get('extractor_args', {})
+            ydl_opts['extractor_args']['instagram'] = [
+                'player_client=android',
+                'format_sort',  # Prefer MP4 formats
+            ]
+        elif "tiktok.com" in url or "vm.tiktok.com" in url:
+            # TikTok-specific options for better extraction
+            ydl_opts['extractor_args'] = ydl_opts.get('extractor_args', {})
+            ydl_opts['extractor_args']['tiktok'] = [
+                'player_client=android',
+            ]
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
@@ -687,6 +834,16 @@ def probe_url(request: Request, url: str = Query(...)):
                 'videos': videos,
                 'cached': False,
             }
+
+            # Add platform-specific metadata
+            if "instagram.com" in url.lower():
+                content_type = _detect_instagram_content_type(url)
+                result['content_type'] = content_type
+                result['platform'] = 'Instagram'
+            elif "tiktok.com" in url.lower() or "vm.tiktok.com" in url.lower():
+                content_type = _detect_tiktok_content_type(url)
+                result['content_type'] = content_type
+                result['platform'] = 'TikTok'
         else:
             # Single video
             result = {
@@ -703,6 +860,16 @@ def probe_url(request: Request, url: str = Query(...)):
                 }],
                 'cached': False,
             }
+
+            # Add platform-specific metadata
+            if "instagram.com" in url.lower():
+                content_type = _detect_instagram_content_type(url)
+                result['content_type'] = content_type
+                result['platform'] = 'Instagram'
+            elif "tiktok.com" in url.lower() or "vm.tiktok.com" in url.lower():
+                content_type = _detect_tiktok_content_type(url)
+                result['content_type'] = content_type
+                result['platform'] = 'TikTok'
 
         # Cache the result
         _metadata_cache.put(url, result)
@@ -724,6 +891,12 @@ def list_formats(request: Request, url: str = Query(...)):
     if not url.startswith(("http://", "https://")):
         return _error_response(ErrorCode.INVALID_URL)
 
+    # Normalize URLs
+    if "instagram.com" in url.lower():
+        url = _normalize_instagram_url(url)
+    elif "tiktok.com" in url.lower():
+        url = _normalize_tiktok_url(url)
+
     try:
         ydl_opts = {
             'quiet': True,
@@ -735,8 +908,19 @@ def list_formats(request: Request, url: str = Query(...)):
 
         _apply_auth_to_opts(ydl_opts, request, url)
 
+        # Platform-specific extractor options
         if "dailymotion.com" in url:
             ydl_opts['force_generic_extractor'] = True
+        elif "instagram.com" in url:
+            ydl_opts['extractor_args'] = ydl_opts.get('extractor_args', {})
+            ydl_opts['extractor_args']['instagram'] = [
+                'player_client=android',
+            ]
+        elif "tiktok.com" in url or "vm.tiktok.com" in url:
+            ydl_opts['extractor_args'] = ydl_opts.get('extractor_args', {})
+            ydl_opts['extractor_args']['tiktok'] = [
+                'player_client=android',
+            ]
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
@@ -881,6 +1065,12 @@ def download_video(
     if not url.startswith(("http://", "https://")):
         return _error_response(ErrorCode.INVALID_URL)
 
+    # Normalize URLs
+    if "instagram.com" in url.lower():
+        url = _normalize_instagram_url(url)
+    elif "tiktok.com" in url.lower():
+        url = _normalize_tiktok_url(url)
+
     try:
         if not subtitle_lang and not embed_subtitles:
             direct_response = _direct_stream_response(
@@ -944,8 +1134,19 @@ def _download_with_retry(
         }
         if request:
             _apply_auth_to_opts(probe_opts, request, url)
+        # Platform-specific extractor options
         if "dailymotion.com" in url:
             probe_opts['force_generic_extractor'] = True
+        elif "instagram.com" in url:
+            probe_opts['extractor_args'] = probe_opts.get('extractor_args', {})
+            probe_opts['extractor_args']['instagram'] = [
+                'player_client=android',
+            ]
+        elif "tiktok.com" in url or "vm.tiktok.com" in url:
+            probe_opts['extractor_args'] = probe_opts.get('extractor_args', {})
+            probe_opts['extractor_args']['tiktok'] = [
+                'player_client=android',
+            ]
         with yt_dlp.YoutubeDL(probe_opts) as ydl:
             info = ydl.extract_info(url, download=False)
     except Exception:
@@ -1001,6 +1202,18 @@ def _download_with_retry(
         'socket_timeout': 60,
         'retries': 3,
     }
+
+    # Add platform-specific extractor options
+    if "instagram.com" in url:
+        ydl_opts['extractor_args'] = ydl_opts.get('extractor_args', {})
+        ydl_opts['extractor_args']['instagram'] = [
+            'player_client=android',
+        ]
+    elif "tiktok.com" in url or "vm.tiktok.com" in url:
+        ydl_opts['extractor_args'] = ydl_opts.get('extractor_args', {})
+        ydl_opts['extractor_args']['tiktok'] = [
+            'player_client=android',
+        ]
 
     # Subtitle embedding: download subtitles and embed in MP4 via FFmpeg
     subtitle_file = None
@@ -1126,6 +1339,12 @@ def download_video_by_index(
     if not url.startswith(("http://", "https://")):
         return _error_response(ErrorCode.INVALID_URL)
 
+    # Normalize URLs
+    if "instagram.com" in url.lower():
+        url = _normalize_instagram_url(url)
+    elif "tiktok.com" in url.lower():
+        url = _normalize_tiktok_url(url)
+
     try:
         return _download_index_with_retry(
             url, index,
@@ -1170,8 +1389,19 @@ def _download_index_with_retry(
         }
         if request:
             _apply_auth_to_opts(probe_opts, request, url)
+        # Platform-specific extractor options
         if "dailymotion.com" in url:
             probe_opts['force_generic_extractor'] = True
+        elif "instagram.com" in url:
+            probe_opts['extractor_args'] = probe_opts.get('extractor_args', {})
+            probe_opts['extractor_args']['instagram'] = [
+                'player_client=android',
+            ]
+        elif "tiktok.com" in url or "vm.tiktok.com" in url:
+            probe_opts['extractor_args'] = probe_opts.get('extractor_args', {})
+            probe_opts['extractor_args']['tiktok'] = [
+                'player_client=android',
+            ]
         with yt_dlp.YoutubeDL(probe_opts) as ydl:
             info = ydl.extract_info(url, download=False)
             # Get the specific entry from playlist
@@ -1232,8 +1462,19 @@ def _download_index_with_retry(
         'retries': 3,
     }
 
+    # Platform-specific options
     if "dailymotion.com" in url:
         ydl_opts['force_generic_extractor'] = True
+    elif "instagram.com" in url:
+        ydl_opts['extractor_args'] = ydl_opts.get('extractor_args', {})
+        ydl_opts['extractor_args']['instagram'] = [
+            'player_client=android',
+        ]
+    elif "tiktok.com" in url or "vm.tiktok.com" in url:
+        ydl_opts['extractor_args'] = ydl_opts.get('extractor_args', {})
+        ydl_opts['extractor_args']['tiktok'] = [
+            'player_client=android',
+        ]
 
     if request:
         _apply_auth_to_opts(ydl_opts, request, url)
@@ -1324,6 +1565,11 @@ def _run_batch_download(job_id: str, url: str, indices: list[int], max_concurren
 
                 if "dailymotion.com" in url:
                     ydl_opts['force_generic_extractor'] = True
+                elif "tiktok.com" in url or "vm.tiktok.com" in url:
+                    ydl_opts['extractor_args'] = ydl_opts.get('extractor_args', {})
+                    ydl_opts['extractor_args']['tiktok'] = [
+                        'player_client=android',
+                    ]
 
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                     ydl.download([url])
@@ -1598,6 +1844,11 @@ def download_video_stream(
 
         if "dailymotion.com" in url:
             ydl_opts['force_generic_extractor'] = True
+        elif "tiktok.com" in url or "vm.tiktok.com" in url:
+            ydl_opts['extractor_args'] = ydl_opts.get('extractor_args', {})
+            ydl_opts['extractor_args']['tiktok'] = [
+                'player_client=android',
+            ]
 
         _apply_auth_to_opts(ydl_opts, request, url)
 
@@ -1995,6 +2246,11 @@ def list_subtitles(request: Request, url: str = Query(...)):
 
         if "dailymotion.com" in url:
             ydl_opts['force_generic_extractor'] = True
+        elif "tiktok.com" in url or "vm.tiktok.com" in url:
+            ydl_opts['extractor_args'] = ydl_opts.get('extractor_args', {})
+            ydl_opts['extractor_args']['tiktok'] = [
+                'player_client=android',
+            ]
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
@@ -2100,6 +2356,11 @@ def download_subtitles(
 
         if "dailymotion.com" in url:
             sub_opts['force_generic_extractor'] = True
+        elif "tiktok.com" in url or "vm.tiktok.com" in url:
+            sub_opts['extractor_args'] = sub_opts.get('extractor_args', {})
+            sub_opts['extractor_args']['tiktok'] = [
+                'player_client=android',
+            ]
 
         # Use yt-dlp to extract subtitle URLs
         with yt_dlp.YoutubeDL(sub_opts) as ydl:

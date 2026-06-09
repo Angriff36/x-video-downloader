@@ -1,10 +1,15 @@
 # Use the slim Python base image
 FROM python:3.12.4-slim
 
-# Install ffmpeg FIRST
-RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg && \
+# Install ffmpeg and unzip (needed for Deno install)
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg unzip curl && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
+
+# Install Deno (required by yt-dlp >= 2025.11.12 for YouTube JS execution)
+RUN curl -fsSL https://deno.land/install.sh | sh && \
+    mv /root/.deno/bin/deno /usr/local/bin/deno && \
+    rm -rf /root/.deno
 
 # Set the working directory
 WORKDIR /app
