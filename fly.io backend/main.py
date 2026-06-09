@@ -334,22 +334,16 @@ def _normalize_instagram_url(url: str) -> str:
     - IGTV: instagram.com/tv/shortcode/
     """
     url = url.strip()
-    lower = url.lower()
 
     # Ensure https
-    if not lower.startswith('https://'):
-        if lower.startswith('http://'):
+    if not url.lower().startswith('https://'):
+        if url.lower().startswith('http://'):
             url = url.replace('http://', 'https://', 1)
         else:
             url = 'https://' + url
-        lower = url.lower()
 
-    # Remove duplicate instagram.com if present
-    url = re.sub(r'(instagram\.com/)*/', r'instagram.com/', url, flags=re.IGNORECASE)
-
-    # Ensure www. is removed for consistency (Instagram works both ways)
-    url = re.sub(r'instagram\.com/', r'www.instagram.com/', url, flags=re.IGNORECASE)
-
+    # Remove trailing query params that can cause issues (like ?igsh=...)
+    # but keep the path intact
     return url
 
 
