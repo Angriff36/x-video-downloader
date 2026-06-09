@@ -399,7 +399,7 @@ def _detect_tiktok_content_type(url: str) -> str:
 # --- Custom Platform Extractors (bypass yt-dlp) ---
 
 def _extract_tiktok(url: str) -> dict | None:
-    """Extract TikTok video info via oembed API and page scraping, bypassing yt-dlp."""
+    """Extract TikTok video info via TikWM API (free, no auth, works from servers)."""
     import requests as _req
     try:
         # Resolve short URLs first
@@ -408,86 +408,49 @@ def _extract_tiktok(url: str) -> dict | None:
                              headers={'User-Agent': 'Mozilla/5.0 (Linux; Android 13) Chrome/115.0.0.0 Mobile'})
             url = resp.url
 
-        # Extract video ID
-        video_id = None
-        m = re.search(r'/video/(\d+)', url)
-        if m:
-            video_id = m.group(1)
-        if not video_id:
-            logger.warning(f"[TikTok] Could not extract video ID from {url}")
-            return None
-
-        # Use oembed API to get video info
-        oembed_url = f"https://www.tiktok.com/oembed?url=https://www.tiktok.com/@user/video/{video_id}"
-        resp = _req.get(oembed_url, timeout=10, headers={
-            'User-Agent': 'Mozilla/5.0 (compatible; bot)',
-        })
-
-        title = "TikTok Video"
-        thumbnail = None
-        if resp.status_code == 200:
-            try:
-                odata = resp.json()
-                title = odata.get('title', title)
-                thumbnail = odata.get('thumbnail_url')
-            except Exception:
-                pass
-
-        # Fetch the actual video page to extract the video URL
-        page_url = f"https://www.tiktok.com/@placeholder/video/{video_id}"
-        resp = _req.get(page_url, timeout=15, headers={
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.9',
-            'Referer': 'https://www.tiktok.com/',
+        # Call TikWM API
+        api_url = "https://www.tikwm.com/api/"
+        resp = _req.post(api_url, data={'url': url}, timeout=20, headers={
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Accept': 'application/json',
         })
 
         if resp.status_code != 200:
-            logger.warning(f"[TikTok] Page returned {resp.status_code} for video {video_id}")
+            logger.warning(f"[TikTok] TikWM API returned {resp.status_code}")
             return None
 
-        html = resp.text
-
-        # Extract video URL from the page's embedded JSON data
-        video_url = None
-
-        # Method 1: Look for the video playAddr in the SIGI_STATE or __UNIVERSAL_DATA
-        play_match = re.search(r'"playAddr":"([^"]+)"', html)
-        if play_match:
-            video_url = play_match.group(1).replace('\\u002F', '/').replace('&amp;', '&')
-
-        # Method 2: Look for downloadAddr
-        if not video_url:
-            dl_match = re.search(r'"downloadAddr":"([^"]+)"', html)
-            if dl_match:
-                video_url = dl_match.group(1).replace('\\u002F', '/').replace('&amp;', '&')
-
-        # Method 3: og:video meta tag
-        if not video_url:
-            og_match = re.search(r'<meta\s+property="og:video(?:\:url)?"[^>]*content="([^"]+)"', html)
-            if og_match:
-                video_url = og_match.group(1).replace('&amp;', '&')
-
-        # Method 4: Look for video src in script tag data
-        if not video_url:
-            src_match = re.search(r'"src":"(https://[^"]*tiktok[^"]*\.mp4[^"]*)"', html)
-            if src_match:
-                video_url = src_match.group(1).replace('\\u002F', '/')
-
-        if not video_url:
-            logger.warning(f"[TikTok] No video URL found for {video_id}")
+        data = resp.json()
+        if data.get('code') != 0 or not data.get('data'):
+            logger.warning(f"[TikTok] TikWM API error: {data.get('msg', 'unknown')}")
             return None
+
+        video = data['data']
+        video_url = video.get('play') or video.get('wmplay') or video.get('hdplay')
+        if not video_url:
+            logger.warning(f"[TikTok] TikWM returned no video URL")
+            return None
+
+        # Prepend CDN base if relative URL
+        if video_url.startswith('//'):
+            video_url = 'https:' + video_url
+        elif video_url.startswith('/'):
+            video_url = 'https://www.tikwm.com' + video_url
+
+        title = video.get('title', 'TikTok Video')
+        thumbnail = video.get('cover') or video.get('origin_cover')
+        video_id = video.get('id', '')
+        duration = video.get('duration')
 
         return {
             'title': title,
             'video_url': video_url,
             'thumbnail': thumbnail,
             'platform': 'TikTok',
-            'video_id': video_id,
-            'duration': None,
+            'video_id': str(video_id),
+            'duration': duration,
         }
     except Exception as e:
-        logger.error(f"[TikTok] Custom extraction failed: {e}")
+        logger.error(f"[TikTok] TikWM extraction failed: {e}")
         return None
 
 
