@@ -1,0 +1,29 @@
+{
+  "category": "Uncategorized",
+  "description": "test that you can work in this project effectively and use tools",
+  "title": "Test project tooling and workspace integration",
+  "images": [],
+  "imagePaths": [],
+  "textFilePaths": [],
+  "skipTests": true,
+  "model": "GLM-5",
+  "thinkingLevel": "none",
+  "reasoningEffort": "none",
+  "branchName": "main",
+  "priority": 2,
+  "planningMode": "lite",
+  "requirePlanApproval": false,
+  "dependencies": [],
+  "status": "waiting_approval",
+  "id": "feature-1777589718221-jwrvvyhd10f",
+  "descriptionHistory": [
+    {
+      "description": "test that you can work in this project effectively and use tools",
+      "timestamp": "2026-04-30T22:55:18.254Z",
+      "source": "initial"
+    }
+  ],
+  "startedAt": "2026-04-30T22:55:30.859Z",
+  "updatedAt": "2026-04-30T23:02:29.698Z",
+  "justFinishedAt": "2026-04-30T23:02:29.699Z"
+}

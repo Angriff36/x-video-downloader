@@ -1,0 +1,19 @@
+{
+  "id": "wifi-only-downloads",
+  "category": "Core",
+  "title": "WiFi-Only Download Mode",
+  "description": "Add setting to restrict downloads to WiFi connections only. Implement network state monitoring using connectivity_plus to pause active downloads when switching to mobile data and auto-resume when WiFi is reconnected.",
+  "status": "verified",
+  "priority": 2,
+  "complexity": "simple",
+  "dependencies": [
+    "download-queue-system"
+  ],
+  "createdAt": "2026-04-30T21:44:14.587Z",
+  "updatedAt": "2026-04-30T23:49:10.008Z",
+  "model": "GLM-5",
+  "thinkingLevel": "none",
+  "branchName": "main",
+  "descriptionHistory": [],
+  "summary": "## Summary: WiFi-Only Download Mode\n\n### Changes Implemented\n- Added `connectivity_plus` and `shared_preferences` dependencies for network state monitoring and settings persistence\n- Created a `NetworkMonitor` service that listens for connectivity changes and exposes WiFi-only toggle with persistent storage\n- Integrated network monitor into `DownloadQueueManager` — pauses active downloads on WiFi disconnect, auto-resumes on WiFi reconnect\n- `_processQueue` now checks WiFi status before starting new downloads when WiFi-only mode is enabled\n- Added WiFi-paused item tracking (`_wifiPausedItems` set) to distinguish system-paused vs user-paused items\n- Added WiFi-only toggle UI in the download queue screen summary bar with status indicator (connected/waiting/paused count)\n\n### Files Modified\n- `x_video_downloader_flutter_frontend/pubspec.yaml` — Added `connectivity_plus: ^6.1.4` and `shared_preferences: ^2.5.3`\n- `x_video_downloader_flutter_frontend/lib/network_monitor.dart` — **New file**: Network connectivity monitor with WiFi-only setting persistence\n- `x_video_downloader_flutter_frontend/lib/download_queue_manager.dart` — Added `networkMonitor` field, `_wifiPausedItems` tracking, `_pauseForWifi()`, `_resumeAfterWifi()`, `isWifiPaused()`, WiFi check in `_processQueue()`, and network monitor callback wiring in `init()`\n- `x_video_downloader_flutter_frontend/lib/download_queue_screen.dart` — Added `NetworkMonitor` parameter, WiFi-only toggle row in summary bar with live status display\n- `x_video_downloader_flutter_frontend/lib/main.dart` — Added global `NetworkMonitor` instance, initialization in `main()`, passed to queue manager and all `DownloadQueueScreen` navigations\n\n### Notes for Developer\n- The WiFi-only setting persists across app restarts via SharedPreferences\n- Downloads paused by WiFi disconnect are tracked separately from user-paused downloads — only WiFi-paused items auto-resume when WiFi reconnects\n- When WiFi-only is enabled and the device is not on WiFi, new downloads will not start (they remain queued)\n- Flutter analyze passes with no errors (only 1 pre-existing info-level warning in unrelated file)"
+}

@@ -1,0 +1,17 @@
+{
+  "id": "quality-selection",
+  "category": "UI",
+  "title": "Video Quality & Format Selection",
+  "description": "Add quality selection UI before download starts, showing available formats/resolutions for each video. Allow users to choose between quality vs file size, with options for audio-only extraction and format preferences (MP4, WEBM, etc.).",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "moderate",
+  "dependencies": [],
+  "createdAt": "2026-04-30T21:44:14.575Z",
+  "updatedAt": "2026-04-30T22:12:53.642Z",
+  "model": "GLM-5",
+  "thinkingLevel": "none",
+  "branchName": "main",
+  "descriptionHistory": [],
+  "summary": "## Summary: Add quality selection UI before download starts\n\n### Changes Implemented\n- **No changes were implemented** - the standard Claude Code file system tools (Bash, Read, Write, Edit, Glob, Grep) are not available in this session, making it impossible to read the existing codebase or write any code changes.\n\n### Files Modified\n- None\n\n### Notes for Developer\n- The quality selection feature was not implemented due to missing file system tools\n- The feature requires: reading existing Flutter frontend and backend code, modifying the download flow to add format fetching before download, creating a quality selection dialog UI, and updating the backend API to support format listing\n- To implement this feature, the agent needs access to: Bash (for running commands), Read/Write/Edit (for file operations), and Glob/Grep (for codebase exploration)\n- Try restarting the Claude Code session or checking tool configuration\n\n### Verification Status\n- Not verified - no implementation was possible"
+}

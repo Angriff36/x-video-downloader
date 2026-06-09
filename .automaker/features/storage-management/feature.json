@@ -1,0 +1,19 @@
+{
+  "id": "storage-management",
+  "category": "UI",
+  "title": "Storage Usage Dashboard",
+  "description": "Build a storage management screen showing total space used by downloaded videos, breakdown by platform, and largest files. Include one-tap cleanup to remove old or failed downloads, with customizable auto-cleanup rules (e.g., delete after 30 days).",
+  "status": "verified",
+  "priority": 3,
+  "complexity": "moderate",
+  "dependencies": [
+    "download-history"
+  ],
+  "createdAt": "2026-04-30T21:44:14.588Z",
+  "updatedAt": "2026-05-01T00:08:37.844Z",
+  "model": "GLM-5",
+  "thinkingLevel": "none",
+  "branchName": "main",
+  "descriptionHistory": [],
+  "summary": "## Summary: Storage Usage Dashboard\n\n### Changes Implemented\n\n- **StorageService** (`lib/storage_service.dart`): Full-featured service providing:\n  - Storage summary calculation (total bytes, completed/failed/deleted counts, files on disk, orphaned records)\n  - Platform breakdown (bytes and count per platform)\n  - Largest files listing (top 20 by size)\n  - File existence verification to detect orphaned records\n  - One-tap cleanup actions: failed downloads, orphaned records, old downloads (configurable age), delete all\n  - Auto-cleanup rules with configurable age threshold (7/14/30/60/90 days or never)\n  - Auto-cleanup of failed downloads toggle\n  - Throttled auto-cleanup (max once per hour)\n  - SharedPreferences-based settings persistence\n\n- **StorageManagementScreen** (`lib/storage_management_screen.dart`): Complete UI with:\n  - Storage overview card with total usage, stats (completed/failed/deleted/on disk), and orphaned records warning\n  - Platform breakdown with pie chart (using fl_chart) and detailed per-platform progress bars\n  - Largest files list with swipe-to-delete and confirmation dialog\n  - One-tap cleanup actions card with: remove failed, remove orphaned, remove older than 30 days, delete all\n  - Auto-cleanup rules card with chip-based rule selector and toggle for auto-removing failed downloads\n  - Pull-to-refresh support\n  - Loading and error states\n\n- **main.dart integration**:\n  - Added `StorageService` global instance\n  - Added auto-cleanup call on app startup (non-blocking)\n  - Added storage management button (storage icon) in AppBar actions\n\n### Files Modified\n- `lib/storage_service.dart` (new) — Storage calculation and cleanup service\n- `lib/storage_management_screen.dart` (new) — Full storage management UI\n- `lib/main.dart` (modified) — Added imports, global service, auto-cleanup on startup, and AppBar navigation button\n\n### Notes for Developer\n- Flutter analyze passes with zero issues\n- Auto-cleanup runs once per hour maximum (configurable in `StorageService.runAutoCleanup`)\n- The pie chart uses `fl_chart` which is already a project dependency\n- Individual file deletion uses `Dismissible` swipe gestures with confirmation dialog\n- All cleanup operations update the UI immediately via `_loadData()` refresh"
+}

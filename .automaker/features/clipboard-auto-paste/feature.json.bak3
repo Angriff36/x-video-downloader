@@ -1,0 +1,16 @@
+{
+  "id": "clipboard-auto-paste",
+  "category": "UI",
+  "title": "Auto-Detect Clipboard URLs",
+  "description": "Automatically detect and offer to download video URLs when user copies them to clipboard. Show a non-intrusive bottom sheet or notification when a supported video URL is detected, with one-tap download initiation.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "simple",
+  "dependencies": [],
+  "createdAt": "2026-04-30T21:44:14.580Z",
+  "updatedAt": "2026-04-30T22:45:40.954Z",
+  "model": "GLM-5",
+  "thinkingLevel": "none",
+  "branchName": "main",
+  "descriptionHistory": []
+}

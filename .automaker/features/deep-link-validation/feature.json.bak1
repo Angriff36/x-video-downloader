@@ -1,0 +1,17 @@
+{
+  "id": "deep-link-validation",
+  "category": "API",
+  "title": "Smart Deep Link Validation",
+  "description": "Implement server-side URL validation before download attempts. Check for unsupported content types, age-restricted content requiring auth, private/deleted videos, and region locks. Return early with helpful error messages to avoid wasted bandwidth.",
+  "status": "in_progress",
+  "priority": 1,
+  "complexity": "moderate",
+  "dependencies": [],
+  "createdAt": "2026-04-30T21:44:14.591Z",
+  "updatedAt": "2026-04-30T22:43:37.160Z",
+  "model": "GLM-5",
+  "thinkingLevel": "none",
+  "branchName": "main",
+  "descriptionHistory": [],
+  "summary": "## Summary: Implement server-side URL validation before download attempts\n\n### Changes Implemented\n- No changes were made — filesystem tools (Bash, Read, Write, Edit, Glob) are unavailable in the current session\n- Browser tools are locked due to an existing Playwright Chrome instance\n- Unable to read project files or write implementation code\n\n### Files Modified\n- None\n\n### Notes for Developer\n- The standard Claude Code filesystem tools are not available in this session's tool set\n- A Playwright browser lock at `C:\\Users\\Ryan\\AppData\\Local\\ms-playwright\\mcp-chrome-b4b6789` is preventing browser-based workarounds\n- Recommend restarting the session or checking tool availability configuration\n- Once filesystem access is restored, the implementation should follow this plan:\n  1. Read the `fly.io backend/` server code to understand the download flow\n  2. Create a URL validation module that checks: unsupported content types, age-restricted content, private/deleted videos, region locks\n  3. Integrate the validation as a pre-download middleware or check\n  4. Return helpful error messages for each failure case\n  5. Test with Playwright\n\n### Verification Status\n- Not verified — no code was written due to tool availability limitations"
+}

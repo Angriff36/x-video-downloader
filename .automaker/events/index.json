@@ -1,0 +1,465 @@
+{
+  "version": 1,
+  "events": [
+    {
+      "id": "evt-1777594915124-05816c91",
+      "trigger": "auto_mode_complete",
+      "timestamp": "2026-05-01T00:21:55.124Z"
+    },
+    {
+      "id": "evt-1777594911412-1c5e0a30",
+      "trigger": "feature_success",
+      "timestamp": "2026-05-01T00:21:51.412Z",
+      "featureName": "Subtitle & Caption Download",
+      "featureId": "subtitle-download-support"
+    },
+    {
+      "id": "evt-1777594911394-b01b52fd",
+      "trigger": "feature_success",
+      "timestamp": "2026-05-01T00:21:51.394Z",
+      "featureName": "Subtitle & Caption Download",
+      "featureId": "subtitle-download-support"
+    },
+    {
+      "id": "evt-1777594117840-d39da47d",
+      "trigger": "feature_success",
+      "timestamp": "2026-05-01T00:08:37.840Z",
+      "featureName": "Storage Usage Dashboard",
+      "featureId": "storage-management"
+    },
+    {
+      "id": "evt-1777593927620-d65d9206",
+      "trigger": "feature_success",
+      "timestamp": "2026-05-01T00:05:27.620Z",
+      "featureName": "Scheduled Downloads",
+      "featureId": "download-scheduling"
+    },
+    {
+      "id": "evt-1777593708955-d1ce2e15",
+      "trigger": "feature_success",
+      "timestamp": "2026-05-01T00:01:48.955Z",
+      "featureName": "Custom Filename Templates",
+      "featureId": "custom-filename-templates"
+    },
+    {
+      "id": "evt-1777593583571-6af8dad1",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T23:59:43.571Z",
+      "featureName": "Download Statistics & Analytics",
+      "featureId": "download-analytics"
+    },
+    {
+      "id": "evt-1777593371888-83916417",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T23:56:11.888Z",
+      "featureName": "Dark Theme & Customization",
+      "featureId": "dark-theme-support"
+    },
+    {
+      "id": "evt-1777593166062-a0d019c4",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T23:52:46.062Z",
+      "featureName": "Batch URL Import",
+      "featureId": "batch-url-import"
+    },
+    {
+      "id": "evt-1777592950004-e4aebd74",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T23:49:10.004Z",
+      "featureName": "WiFi-Only Download Mode",
+      "featureId": "wifi-only-downloads"
+    },
+    {
+      "id": "evt-1777592882111-9cdcce58",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T23:48:02.111Z",
+      "featureName": "Video Preview Thumbnails",
+      "featureId": "video-preview-thumbnails"
+    },
+    {
+      "id": "evt-1777592751028-235d347f",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T23:45:51.028Z",
+      "featureName": "Background Download Service (Android)",
+      "featureId": "background-downloads-android"
+    },
+    {
+      "id": "evt-1777592524055-7ec0c8b5",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T23:42:04.055Z",
+      "featureName": "In-App Platform Authentication",
+      "featureId": "platform-auth-integration"
+    },
+    {
+      "id": "evt-1777592519579-d210df0e",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T23:41:59.579Z",
+      "featureName": "Video Quality & Format Selection",
+      "featureId": "quality-selection"
+    },
+    {
+      "id": "evt-1777591802544-25b01a5b",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T23:30:02.544Z",
+      "featureName": "Download Speed Optimization",
+      "featureId": "download-speed-optimization"
+    },
+    {
+      "id": "evt-1777591750654-1afc8b38",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T23:29:10.654Z",
+      "featureName": "Download Queue with Pause/Resume",
+      "featureId": "download-queue-system"
+    },
+    {
+      "id": "evt-1777591546080-6094c87d",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T23:25:46.080Z",
+      "featureName": "Cross-App Share Integration",
+      "featureId": "cross-platform-sharing"
+    },
+    {
+      "id": "evt-1777591178877-3998d361",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T23:19:38.877Z",
+      "featureName": "Multi-Video Album/Media Group Downloads",
+      "featureId": "media-group-support"
+    },
+    {
+      "id": "evt-1777591104463-13eb18bf",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T23:18:24.463Z",
+      "featureName": "Auto-Detect Clipboard URLs",
+      "featureId": "clipboard-auto-paste"
+    },
+    {
+      "id": "evt-1777591087187-db08d3ef",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T23:18:07.187Z",
+      "featureName": "Enhanced Error Handling & User Feedback",
+      "featureId": "error-handling-improvements"
+    },
+    {
+      "id": "evt-1777591056212-ffeb011d",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T23:17:36.212Z",
+      "featureName": "Download History & Management",
+      "featureId": "download-history"
+    },
+    {
+      "id": "evt-1777590212746-182f0dc0",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T23:03:32.746Z",
+      "featureName": "Test project tooling and workspace integration",
+      "featureId": "feature-1777589718221-jwrvvyhd10f"
+    },
+    {
+      "id": "evt-1777590175760-4f058d49",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T23:02:55.760Z",
+      "featureName": "Test project tooling and workspace integration",
+      "featureId": "feature-1777589718221-jwrvvyhd10f"
+    },
+    {
+      "id": "evt-1777590149702-279b84ae",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T23:02:29.702Z",
+      "featureName": "Test project tooling and workspace integration",
+      "featureId": "feature-1777589718221-jwrvvyhd10f"
+    },
+    {
+      "id": "evt-1777589718255-d38c0492",
+      "trigger": "feature_created",
+      "timestamp": "2026-04-30T22:55:18.255Z",
+      "featureName": "Untitled Feature",
+      "featureId": "feature-1777589718221-jwrvvyhd10f"
+    },
+    {
+      "id": "evt-1777589689763-f3e0aaf9",
+      "trigger": "feature_error",
+      "timestamp": "2026-04-30T22:54:49.763Z",
+      "featureName": "Download History & Management",
+      "featureId": "download-history"
+    },
+    {
+      "id": "evt-1777589141922-5aa2f267",
+      "trigger": "feature_error",
+      "timestamp": "2026-04-30T22:45:41.922Z",
+      "featureName": "Enhanced Error Handling & User Feedback",
+      "featureId": "error-handling-improvements"
+    },
+    {
+      "id": "evt-1777589141555-2feedc1d",
+      "trigger": "feature_error",
+      "timestamp": "2026-04-30T22:45:41.555Z",
+      "featureName": "Download History & Management",
+      "featureId": "download-history"
+    },
+    {
+      "id": "evt-1777589140957-c2456396",
+      "trigger": "feature_error",
+      "timestamp": "2026-04-30T22:45:40.957Z",
+      "featureName": "Auto-Detect Clipboard URLs",
+      "featureId": "clipboard-auto-paste"
+    },
+    {
+      "id": "evt-1777589119383-f9c50d77",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T22:45:19.383Z",
+      "featureName": "Smart Deep Link Validation",
+      "featureId": "deep-link-validation"
+    },
+    {
+      "id": "evt-1777589014233-77de7bd7",
+      "trigger": "feature_error",
+      "timestamp": "2026-04-30T22:43:34.233Z",
+      "featureName": "Storage Usage Dashboard",
+      "featureId": "storage-management"
+    },
+    {
+      "id": "evt-1777589012762-cb9f4bbc",
+      "trigger": "feature_error",
+      "timestamp": "2026-04-30T22:43:32.762Z",
+      "featureName": "Scheduled Downloads",
+      "featureId": "download-scheduling"
+    },
+    {
+      "id": "evt-1777588846054-a0d9bbb8",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T22:40:46.054Z",
+      "featureName": "Download Statistics & Analytics",
+      "featureId": "download-analytics"
+    },
+    {
+      "id": "evt-1777588846039-74d18659",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T22:40:46.039Z",
+      "featureName": "Download Statistics & Analytics",
+      "featureId": "download-analytics"
+    },
+    {
+      "id": "evt-1777587585527-0e32f54d",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T22:19:45.527Z",
+      "featureName": "Custom Filename Templates",
+      "featureId": "custom-filename-templates"
+    },
+    {
+      "id": "evt-1777587585518-f694f0bc",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T22:19:45.518Z",
+      "featureName": "Custom Filename Templates",
+      "featureId": "custom-filename-templates"
+    },
+    {
+      "id": "evt-1777587558161-c288d7f7",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T22:19:18.161Z",
+      "featureName": "Batch URL Import",
+      "featureId": "batch-url-import"
+    },
+    {
+      "id": "evt-1777587558151-b6236d11",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T22:19:18.151Z",
+      "featureName": "Batch URL Import",
+      "featureId": "batch-url-import"
+    },
+    {
+      "id": "evt-1777587557759-0767c577",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T22:19:17.759Z",
+      "featureName": "Dark Theme & Customization",
+      "featureId": "dark-theme-support"
+    },
+    {
+      "id": "evt-1777587557755-106255a4",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T22:19:17.755Z",
+      "featureName": "Dark Theme & Customization",
+      "featureId": "dark-theme-support"
+    },
+    {
+      "id": "evt-1777587276618-69a08434",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T22:14:36.618Z",
+      "featureName": "Video Preview Thumbnails",
+      "featureId": "video-preview-thumbnails"
+    },
+    {
+      "id": "evt-1777587276609-ed9dce5a",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T22:14:36.609Z",
+      "featureName": "Video Preview Thumbnails",
+      "featureId": "video-preview-thumbnails"
+    },
+    {
+      "id": "evt-1777587271222-3289b229",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T22:14:31.222Z",
+      "featureName": "WiFi-Only Download Mode",
+      "featureId": "wifi-only-downloads"
+    },
+    {
+      "id": "evt-1777587271215-a54fba4c",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T22:14:31.215Z",
+      "featureName": "WiFi-Only Download Mode",
+      "featureId": "wifi-only-downloads"
+    },
+    {
+      "id": "evt-1777587173649-1a943dda",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T22:12:53.649Z",
+      "featureName": "Video Quality & Format Selection",
+      "featureId": "quality-selection"
+    },
+    {
+      "id": "evt-1777587173637-001bf295",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T22:12:53.637Z",
+      "featureName": "Video Quality & Format Selection",
+      "featureId": "quality-selection"
+    },
+    {
+      "id": "evt-1777587057977-b349708e",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T22:10:57.977Z",
+      "featureName": "Background Download Service (Android)",
+      "featureId": "background-downloads-android"
+    },
+    {
+      "id": "evt-1777587057970-ece97be2",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T22:10:57.970Z",
+      "featureName": "Background Download Service (Android)",
+      "featureId": "background-downloads-android"
+    },
+    {
+      "id": "evt-1777587007368-ce977ce8",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T22:10:07.368Z",
+      "featureName": "Multi-Video Album/Media Group Downloads",
+      "featureId": "media-group-support"
+    },
+    {
+      "id": "evt-1777587007355-eec8a9f1",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T22:10:07.355Z",
+      "featureName": "Multi-Video Album/Media Group Downloads",
+      "featureId": "media-group-support"
+    },
+    {
+      "id": "evt-1777586689808-a9e71e51",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T22:04:49.808Z",
+      "featureName": "Download Queue with Pause/Resume",
+      "featureId": "download-queue-system"
+    },
+    {
+      "id": "evt-1777586689799-f76a3521",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T22:04:49.799Z",
+      "featureName": "Download Queue with Pause/Resume",
+      "featureId": "download-queue-system"
+    },
+    {
+      "id": "evt-1777586659582-b2293261",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T22:04:19.582Z",
+      "featureName": "In-App Platform Authentication",
+      "featureId": "platform-auth-integration"
+    },
+    {
+      "id": "evt-1777586659577-cc3d7c82",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T22:04:19.577Z",
+      "featureName": "In-App Platform Authentication",
+      "featureId": "platform-auth-integration"
+    },
+    {
+      "id": "evt-1777586524455-4eef3ded",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T22:02:04.455Z",
+      "featureName": "Cross-App Share Integration",
+      "featureId": "cross-platform-sharing"
+    },
+    {
+      "id": "evt-1777586524445-3b4d7ca2",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T22:02:04.445Z",
+      "featureName": "Cross-App Share Integration",
+      "featureId": "cross-platform-sharing"
+    },
+    {
+      "id": "evt-1777586396623-1f8ba85c",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T21:59:56.623Z",
+      "featureName": "Download Speed Optimization",
+      "featureId": "download-speed-optimization"
+    },
+    {
+      "id": "evt-1777586396612-26ffd76f",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T21:59:56.612Z",
+      "featureName": "Download Speed Optimization",
+      "featureId": "download-speed-optimization"
+    },
+    {
+      "id": "evt-1777586361607-f66530e0",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T21:59:21.607Z",
+      "featureName": "Auto-Detect Clipboard URLs",
+      "featureId": "clipboard-auto-paste"
+    },
+    {
+      "id": "evt-1777586361600-52790881",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T21:59:21.600Z",
+      "featureName": "Auto-Detect Clipboard URLs",
+      "featureId": "clipboard-auto-paste"
+    },
+    {
+      "id": "evt-1777586213497-f80d7b67",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T21:56:53.497Z",
+      "featureName": "Download History & Management",
+      "featureId": "download-history"
+    },
+    {
+      "id": "evt-1777586213484-b2b8d4c3",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T21:56:53.484Z",
+      "featureName": "Download History & Management",
+      "featureId": "download-history"
+    },
+    {
+      "id": "evt-1777586202730-4309d579",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T21:56:42.730Z",
+      "featureName": "Enhanced Error Handling & User Feedback",
+      "featureId": "error-handling-improvements"
+    },
+    {
+      "id": "evt-1777586202716-cc86fc13",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T21:56:42.716Z",
+      "featureName": "Enhanced Error Handling & User Feedback",
+      "featureId": "error-handling-improvements"
+    },
+    {
+      "id": "evt-1777585981160-8d9bbb95",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T21:53:01.160Z",
+      "featureName": "Smart Deep Link Validation",
+      "featureId": "deep-link-validation"
+    },
+    {
+      "id": "evt-1777585981142-6a8f8df5",
+      "trigger": "feature_success",
+      "timestamp": "2026-04-30T21:53:01.142Z",
+      "featureName": "Smart Deep Link Validation",
+      "featureId": "deep-link-validation"
+    }
+  ]
+}

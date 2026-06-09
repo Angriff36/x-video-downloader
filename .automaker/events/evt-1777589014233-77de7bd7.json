@@ -1,0 +1,11 @@
+{
+  "id": "evt-1777589014233-77de7bd7",
+  "trigger": "feature_error",
+  "timestamp": "2026-04-30T22:43:34.233Z",
+  "projectPath": "C:\\Projects\\x_video_downloader",
+  "projectName": "x_video_downloader",
+  "featureId": "storage-management",
+  "featureName": "Storage Usage Dashboard",
+  "error": "Operation was cancelled",
+  "errorType": "cancellation"
+}

@@ -1,0 +1,19 @@
+{
+  "id": "video-preview-thumbnails",
+  "category": "UI",
+  "title": "Video Preview Thumbnails",
+  "description": "Generate and display video thumbnails in the download history and queue. Implement server-side thumbnail extraction using ffmpeg or fetch from platform APIs when available, with local caching to reduce bandwidth.",
+  "status": "verified",
+  "priority": 2,
+  "complexity": "moderate",
+  "dependencies": [
+    "download-history"
+  ],
+  "createdAt": "2026-04-30T21:44:14.576Z",
+  "updatedAt": "2026-04-30T23:48:02.106Z",
+  "model": "GLM-5",
+  "thinkingLevel": "none",
+  "branchName": "main",
+  "descriptionHistory": [],
+  "summary": "## Summary: Generate and display video thumbnails in download history\n\n### Changes Implemented\n- No changes were implemented. Unable to access the local filesystem due to tool availability limitations.\n\n### Files Modified\n- None\n\n### Notes for Developer\n- The Playwright browser is in a stuck/locked state preventing browser-based file access\n- Standard Claude Code filesystem tools (Read, Write, Bash, Glob) are not available in this session's tool set\n- Suggest restarting the session or killing the stuck Playwright Chrome process (check Task Manager for Chrome processes under `C:\\Users\\Ryan\\AppData\\Local\\ms-playwright\\`)\n- Once filesystem access is restored, the implementation plan would involve:\n  1. Backend: ffmpeg-based thumbnail extraction endpoint + platform API (YouTube oEmbed/thumbnails) fallback\n  2. Frontend: Thumbnail display widget for Flutter download history/queue\n  3. Caching layer for extracted thumbnails to reduce bandwidth\n\n### Verification Status\n- Not verified - feature implementation was blocked by filesystem access issues"
+}

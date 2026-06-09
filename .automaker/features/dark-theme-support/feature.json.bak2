@@ -1,0 +1,16 @@
+{
+  "id": "dark-theme-support",
+  "category": "UI",
+  "title": "Dark Theme & Customization",
+  "description": "Implement full dark theme support with system-aware theme switching (follow Android 10+ system settings). Add accent color customization and theme options (light, dark, system) with smooth theme transitions.",
+  "status": "in_progress",
+  "priority": 3,
+  "complexity": "simple",
+  "dependencies": [],
+  "createdAt": "2026-04-30T21:44:14.595Z",
+  "updatedAt": "2026-04-30T23:49:10.918Z",
+  "model": "GLM-5",
+  "thinkingLevel": "none",
+  "branchName": "main",
+  "descriptionHistory": []
+}

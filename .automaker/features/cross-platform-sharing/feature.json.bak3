@@ -1,0 +1,19 @@
+{
+  "id": "cross-platform-sharing",
+  "category": "UI",
+  "title": "Cross-App Share Integration",
+  "description": "Add ability to share downloaded videos directly to other apps (social media, messaging, cloud storage). Implement Flutter share sheet integration and include video metadata in shared content when supported by target apps.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "simple",
+  "dependencies": [
+    "download-history"
+  ],
+  "createdAt": "2026-04-30T21:44:14.593Z",
+  "updatedAt": "2026-04-30T22:02:04.450Z",
+  "model": "GLM-5",
+  "thinkingLevel": "none",
+  "branchName": "main",
+  "descriptionHistory": [],
+  "summary": "## Summary: Cross-platform Sharing Feature\n\n### Changes Implemented\n- No changes were implemented — the required file operation tools (Bash, Read, Write, Edit, Glob, TodoWrite) are not available in this environment.\n\n### Files Modified\n- None\n\n### Notes for Developer\n- The core Claude Code CLI tools needed for file operations are missing from this session.\n- To implement this feature, the following plan should be followed once tools are available:\n  1. Add `share_plus` package to `pubspec.yaml`\n  2. Create a share service/helper that wraps the share_plus API\n  3. Add share buttons to the video list/downloaded videos UI\n  4. Include video metadata (title, description) in shared content\n  5. Handle platform-specific share behavior (iOS, Android)\n- Restart the session or verify Claude Code configuration to restore file operation tools.\n\n### Verification Status\n- Could not verify — Playwright testing requires file system access which is unavailable."
+}

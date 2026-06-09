@@ -1,0 +1,28 @@
+# fly.toml app configuration file generated for x-video-downloader-backend on 2025-04-26T01:37:45Z
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = "x-video-downloader-backend"
+primary_region = "sea"  # <-- Moved to top level
+
+[build]
+  dockerfile = "Dockerfile"
+
+# Define the process to run the app
+# Use the global uvicorn since the simplified Dockerfile installs globally
+[processes]
+  app = "uvicorn main:app --host 0.0.0.0 --port 8000" # <-- Corrected command
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"] # <-- Correctly points to the 'app' process defined above
+
+[[vm]]
+  memory = "1gb"
+  cpu_kind = "shared"
+  cpus = 1

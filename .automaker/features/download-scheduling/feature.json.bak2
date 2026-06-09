@@ -1,0 +1,18 @@
+{
+  "id": "download-scheduling",
+  "category": "Core",
+  "title": "Scheduled Downloads",
+  "description": "Allow users to schedule downloads for specific times (e.g., overnight during off-peak hours). Integrate with Android's JobScheduler for efficient scheduling with WiFi-only option and queue processing automation.",
+  "status": "in_progress",
+  "priority": 3,
+  "complexity": "moderate",
+  "dependencies": [
+    "download-queue-system"
+  ],
+  "createdAt": "2026-04-30T21:44:14.583Z",
+  "updatedAt": "2026-04-30T23:56:13.176Z",
+  "model": "GLM-5",
+  "thinkingLevel": "none",
+  "branchName": "main",
+  "descriptionHistory": []
+}

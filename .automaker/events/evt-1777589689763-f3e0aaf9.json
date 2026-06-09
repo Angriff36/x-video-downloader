@@ -1,0 +1,11 @@
+{
+  "id": "evt-1777589689763-f3e0aaf9",
+  "trigger": "feature_error",
+  "timestamp": "2026-04-30T22:54:49.763Z",
+  "projectPath": "C:\\Projects\\x_video_downloader",
+  "projectName": "x_video_downloader",
+  "featureId": "download-history",
+  "featureName": "Download History & Management",
+  "error": "Operation was cancelled",
+  "errorType": "cancellation"
+}

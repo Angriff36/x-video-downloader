@@ -1,0 +1,19 @@
+{
+  "id": "video-preview-thumbnails",
+  "category": "UI",
+  "title": "Video Preview Thumbnails",
+  "description": "Generate and display video thumbnails in the download history and queue. Implement server-side thumbnail extraction using ffmpeg or fetch from platform APIs when available, with local caching to reduce bandwidth.",
+  "status": "verified",
+  "priority": 2,
+  "complexity": "moderate",
+  "dependencies": [
+    "download-history"
+  ],
+  "createdAt": "2026-04-30T21:44:14.576Z",
+  "updatedAt": "2026-04-30T23:48:02.115Z",
+  "model": "GLM-5",
+  "thinkingLevel": "none",
+  "branchName": "main",
+  "descriptionHistory": [],
+  "summary": "## Summary: Video Preview Thumbnails\n\n### Changes Implemented\n- **Backend**: Added `GET /thumbnail` endpoint that proxies thumbnail images from platform CDNs, with server-side caching (24h TTL, file-based), optional resize via Pillow (width parameter, max 640px), and proper `Cache-Control` headers\n- **Database**: Migrated `downloads` table to v5, adding `thumbnailUrl TEXT` column for persisting thumbnail URLs in download history records\n- **DownloadRecord model**: Added `thumbnailUrl` field (nullable String) with serialization/deserialization in `fromMap`/`toMap`\n- **DownloadQueueManager**: Modified `_recordDownload()` to pass `thumbnailUrl` from `QueueItem` to `DownloadRecord` when recording completed/failed downloads to history\n- **Download History Screen**: Replaced static platform icon with thumbnail image in list items (64x48px, rounded corners), falling back to platform icon on load error. Added thumbnail preview (180px height, full width) in the detail bottom sheet\n- **Download Queue Screen**: Replaced status icon with thumbnail image in queue item tiles (64x48px), with a semi-transparent download progress overlay showing percentage during active downloads. Falls back to status icon on error\n\n### Files Modified\n- `fly.io backend/main.py` - Added `/thumbnail` endpoint with caching and resize\n- `x_video_downloader_flutter_frontend/lib/download_database.dart` - DB version 4→5, added `thumbnailUrl` column migration\n- `x_video_downloader_flutter_frontend/lib/download_record.dart` - Added `thumbnailUrl` field\n- `x_video_downloader_flutter_frontend/lib/download_queue_manager.dart` - Pass thumbnail to history records\n- `x_video_downloader_flutter_frontend/lib/download_history_screen.dart` - Thumbnail display in list and detail sheet\n- `x_video_downloader_flutter_frontend/lib/download_queue_screen.dart` - Thumbnail display with progress overlay\n\n### Notes for Developer\n- The `QueueItem` model already had `thumbnailUrl` populated from the `/probe` and `/formats` endpoints, so the data pipeline from yt-dlp → backend → Flutter → queue was already in place. The missing pieces were: persisting to history records and displaying in the UI.\n- The backend `/thumbnail` endpoint uses Pillow for resize if available but gracefully falls back to serving the original image. For the Fly.io deployment, add `Pillow` to the backend's `requirements.txt` to enable resize.\n- The Flutter analysis shows 5 pre-existing errors related to an incomplete `NetworkMonitor` feature integration — these are NOT from the thumbnail changes.\n- Thumbnail URLs come directly from the platform CDNs (YouTube, TikTok, etc.) via yt-dlp metadata, so no ffmpeg extraction is needed for the initial implementation. The backend `/thumbnail` endpoint provides a proxy/cache layer for these URLs."
+}

@@ -1,0 +1,11 @@
+{
+  "id": "evt-1777589012762-cb9f4bbc",
+  "trigger": "feature_error",
+  "timestamp": "2026-04-30T22:43:32.762Z",
+  "projectPath": "C:\\Projects\\x_video_downloader",
+  "projectName": "x_video_downloader",
+  "featureId": "download-scheduling",
+  "featureName": "Scheduled Downloads",
+  "error": "Operation was cancelled",
+  "errorType": "cancellation"
+}

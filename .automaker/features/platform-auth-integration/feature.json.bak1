@@ -1,0 +1,16 @@
+{
+  "id": "platform-auth-integration",
+  "category": "Authentication",
+  "title": "In-App Platform Authentication",
+  "description": "Add OAuth login buttons for major platforms (Twitter, Instagram, TikTok) to streamline authenticated content access. Securely store tokens using flutter_secure_storage and automatically refresh when expired, eliminating manual cookie uploads.",
+  "status": "verified",
+  "priority": 2,
+  "complexity": "complex",
+  "dependencies": [],
+  "createdAt": "2026-04-30T21:44:14.585Z",
+  "updatedAt": "2026-04-30T23:42:04.046Z",
+  "model": "GLM-5",
+  "thinkingLevel": "none",
+  "branchName": "main",
+  "descriptionHistory": []
+}

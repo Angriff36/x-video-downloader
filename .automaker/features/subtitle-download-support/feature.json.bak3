@@ -1,0 +1,16 @@
+{
+  "id": "subtitle-download-support",
+  "category": "Core",
+  "title": "Subtitle & Caption Download",
+  "description": "Add ability to download video subtitles/captions when available. Support multiple formats (SRT, VTT, ASS) with language selection UI. Auto-embed subtitles in MP4 container or save as separate sidecar file based on user preference.",
+  "status": "backlog",
+  "priority": 3,
+  "complexity": "moderate",
+  "dependencies": [],
+  "createdAt": "2026-04-30T21:44:14.586Z",
+  "updatedAt": "2026-04-30T21:44:14.586Z",
+  "model": "GLM-5",
+  "thinkingLevel": "none",
+  "branchName": "main",
+  "descriptionHistory": []
+}

@@ -1,0 +1,2 @@
+[   27788ms] [ERROR] Not allowed to load local resource: file:///C:/Projects/x_video_downloader/x_video_downloader_flutter_frontend/pubspec.yaml @ :3
+[   90882ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/:0

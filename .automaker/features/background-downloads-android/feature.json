@@ -1,0 +1,19 @@
+{
+  "id": "background-downloads-android",
+  "category": "Core",
+  "title": "Background Download Service (Android)",
+  "description": "Implement foreground service with notification for Android to continue downloads when app is backgrounded or screen is off. Use WorkManager for reliable background task execution with proper notification controls and battery optimization.",
+  "status": "verified",
+  "priority": 2,
+  "complexity": "complex",
+  "dependencies": [
+    "download-queue-system"
+  ],
+  "createdAt": "2026-04-30T21:44:14.578Z",
+  "updatedAt": "2026-04-30T23:45:51.033Z",
+  "model": "GLM-5",
+  "thinkingLevel": "none",
+  "branchName": "main",
+  "descriptionHistory": [],
+  "summary": "## Summary: Background Download Service (Android)\n\n### Changes Implemented\n- Added `flutter_background_service` and `flutter_local_notifications` packages for Android foreground service with persistent notification\n- Created `BackgroundDownloadService` singleton class that manages the foreground service lifecycle, notification channel, and progress updates\n- Integrated the background service into the existing `DownloadQueueManager`:\n  - Service starts automatically when downloads begin (`_processQueue`)\n  - Notification updates with download progress throttled to ~5% increments\n  - Service stops automatically when all downloads complete or fail\n  - Completion notification shows summary (completed/failed counts)\n- Added required Android permissions: `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_DATA_SYNC`, `POST_NOTIFICATIONS`, `WAKE_LOCK`\n- Created notification icon drawable (`ic_stat_download.xml`)\n- Notification permission request on Android 13+ at app startup\n- Enabled Java 8 core library desugaring (required by `flutter_local_notifications`)\n- Fixed pre-existing `appAuthRedirectScheme` manifest placeholder issue\n\n### Files Modified\n- `x_video_downloader_flutter_frontend/pubspec.yaml` - Added `flutter_background_service: ^5.1.0`, `flutter_local_notifications: ^19.2.0`\n- `x_video_downloader_flutter_frontend/android/app/src/main/AndroidManifest.xml` - Added foreground service and notification permissions\n- `x_video_downloader_flutter_frontend/android/app/build.gradle.kts` - Added core library desugaring, `appAuthRedirectScheme` manifest placeholder\n- `x_video_downloader_flutter_frontend/lib/background_download_service.dart` - **NEW**: Foreground service manager with notification support\n- `x_video_downloader_flutter_frontend/lib/download_queue_manager.dart` - Integrated background service into download lifecycle\n- `x_video_downloader_flutter_frontend/lib/main.dart` - Added notification plugin init, permission request\n- `x_video_downloader_flutter_frontend/android/app/src/main/res/drawable/ic_stat_download.xml` - **NEW**: Notification icon drawable\n\n### Notes for Developer\n- The foreground service starts automatically when downloads begin and stops when all downloads complete\n- The notification shows download title, progress percentage, and queue status\n- On Android 13+, the user will be prompted for notification permission at first launch\n- The `flutter_background_service` package handles the Android 14+ foreground service type (`dataSync`) declaration automatically via its own manifest\n- Build verified: `flutter build apk --debug` succeeds, `dart analyze` reports no issues\n- Fixed pre-existing build issue: `appAuthRedirectScheme` placeholder was missing from `build.gradle.kts`"
+}

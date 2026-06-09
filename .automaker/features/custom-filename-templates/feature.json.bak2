@@ -1,0 +1,19 @@
+{
+  "id": "custom-filename-templates",
+  "category": "UI",
+  "title": "Custom Filename Templates",
+  "description": "Let users define custom filename templates using placeholders like {platform}, {uploader}, {title}, {date}, {quality}. Provide sensible defaults and allow per-platform template configuration for organized local libraries.",
+  "status": "in_progress",
+  "priority": 3,
+  "complexity": "moderate",
+  "dependencies": [
+    "download-history"
+  ],
+  "createdAt": "2026-04-30T21:44:14.582Z",
+  "updatedAt": "2026-04-30T23:48:03.366Z",
+  "model": "GLM-5",
+  "thinkingLevel": "none",
+  "branchName": "main",
+  "descriptionHistory": [],
+  "summary": "## Summary: Custom Filename Templates\n\n### Changes Implemented\n- No changes could be implemented due to missing file system tools\n\n### Files Modified\n- None\n\n### Notes for Developer\n- The environment lacks standard Claude Code built-in tools (Read, Write, Edit, Bash, Glob, Grep)\n- Playwright browser has a stale lock preventing its use\n- Chrome is not running for chrome-devtools access\n- Supabase is not authenticated\n- Project needs to be re-run in the Claude Code CLI with proper tool access, or the Playwright lock needs to be cleared\n\n### Verification Status\n- No verification was possible due to missing tools"
+}

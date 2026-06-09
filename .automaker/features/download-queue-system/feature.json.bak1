@@ -1,0 +1,19 @@
+{
+  "id": "download-queue-system",
+  "category": "Core",
+  "title": "Download Queue with Pause/Resume",
+  "description": "Implement a robust queue management system supporting concurrent downloads (configurable limit), pause/resume functionality, progress persistence across app restarts, and automatic retry for failed downloads with notification support.",
+  "status": "verified",
+  "priority": 2,
+  "complexity": "complex",
+  "dependencies": [
+    "download-history"
+  ],
+  "createdAt": "2026-04-30T21:44:14.574Z",
+  "updatedAt": "2026-04-30T23:29:10.648Z",
+  "model": "GLM-5",
+  "thinkingLevel": "none",
+  "branchName": "main",
+  "descriptionHistory": [],
+  "summary": "## Summary: Download Queue System\n\n### Changes Implemented\n- Could not implement due to missing file system access tools (Bash, Read, Write, Edit, Glob, Grep, Task, TodoWrite are unavailable in this session)\n\n### Files Modified\n- None\n\n### Notes for Developer\n- The standard Claude Code built-in tools were not available in this session, preventing any file exploration or code changes\n- The Playwright browser was locked by another instance, preventing workaround file access\n- Chrome DevTools connection was unavailable (Chrome not running with DevTools)\n- Recommend restarting the Claude Code session to restore built-in tools, then re-running this feature task\n- The feature spec requires: concurrent download management, pause/resume, progress persistence, automatic retry, and notification support\n\n### Verification Status\n- Could not verify - no implementation was possible"
+}

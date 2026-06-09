@@ -1,0 +1,304 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project_specification>
+  <project_name>X Video Downloader</project_name>
+
+  <overview>
+    A cross-platform video downloader application that enables users to download embedded videos from multiple social media and video platforms including X (Twitter), Rumble, Twitch, Reddit, YouTube, Instagram, TikTok, Vimeo, and Dailymotion. The application consists of a Flutter mobile frontend and a FastAPI backend service deployed on Fly.io, utilizing yt-dlp and ffmpeg for video extraction and processing. The app provides a simple interface for users to paste video URLs, download content directly to their device storage, and access downloaded videos through the device gallery. Key goals include providing reliable video downloading capabilities, maintaining privacy through local-first architecture, ensuring Play Store compliance, and supporting platform-specific optimizations for different video sources.
+  </overview>
+
+  <technology_stack>
+    <technology>Flutter 3.7.2+ (Dart)</technology>
+    <technology>FastAPI 0.115.12</technology>
+    <technology>Python 3.12.4</technology>
+    <technology>yt-dlp 2025.3.26</technology>
+    <technology>ffmpeg</technology>
+    <technology>Uvicorn 0.34.0</technology>
+    <technology>Fly.io (cloud deployment)</technology>
+    <technology>Android SDK</technology>
+    <technology>Kotlin (Android platform layer)</technology>
+    <technology>receive_sharing_intent (Flutter plugin)</technology>
+    <technology>path_provider 2.1.5</technology>
+    <technology>permission_handler 11.4.0</technology>
+    <technology>http 1.3.0</technology>
+    <technology>android_intent_plus 4.0.2</technology>
+    <technology>url_launcher 6.2.5</technology>
+    <technology>file_picker 10.1.2</technology>
+  </technology_stack>
+
+  <core_capabilities>
+    <capability>Download videos from multiple platforms (X/Twitter, Rumble, Twitch, Reddit, YouTube, Instagram, TikTok, Vimeo, Dailymotion)</capability>
+    <capability>Platform-specific extraction optimizations (custom User-Agents, Referers, and client configurations)</capability>
+    <capability>Share intent integration for receiving URLs from other apps</capability>
+    <capability>Progress tracking during downloads</capability>
+    <capability>Direct save to device storage with gallery integration</capability>
+    <capability>Media scanner integration for Android gallery visibility</capability>
+    <capability>Automatic ffmpeg video conversion to MP4 format</capability>
+    <capability>Cookie upload support for authenticated content</capability>
+    <capability>Best quality video+audio merging</capability>
+    <capability>Responsive mobile UI with download status feedback</capability>
+  </core_capabilities>
+
+  <implemented_features>
+    <feature>
+      <name>Video Download Endpoint</name>
+      <description>FastAPI REST endpoint (/download) that accepts video URLs, configures platform-specific extraction options, downloads videos using yt-dlp, and returns processed MP4 files via FileResponse</description>
+      <file_locations>
+        <location>fly.io backend/main.py</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Platform-Specific Optimizations</name>
+      <description>Intelligent URL detection to set appropriate Referer headers, User-Agent strings, and yt-dlp options for different platforms (Instagram, TikTok, YouTube, Vimeo, Dailymotion)</description>
+      <file_locations>
+        <location>fly.io backend/main.py</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Flutter Frontend UI</name>
+      <description>Mobile interface with URL input field, download button, progress indicator, status messages, gallery launcher, and donation link</description>
+      <file_locations>
+        <location>x_video_downloader_flutter_frontend/lib/main.dart</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Share Intent Integration</name>
+      <description>Automatically receives shared URLs from other Android apps via receive_sharing_intent plugin, populating the URL field when links are shared to the app</description>
+      <file_locations>
+        <location>x_video_downloader_flutter_frontend/lib/main.dart</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Local File Storage</name>
+      <description>Downloads videos to app-specific external storage directory (Android scoped storage) with proper directory creation and file naming using timestamps</description>
+      <file_locations>
+        <location>x_video_downloader_flutter_frontend/lib/main.dart</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Android Media Scanner Integration</name>
+      <description>Kotlin MethodChannel implementation that triggers Android&apos;s media scanner to make downloaded videos visible in the device gallery app</description>
+      <file_locations>
+        <location>x_video_downloader_flutter_frontend/android/app/src/main/kotlin/com/angriff/x_video_downloader/MainActivity.kt</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Cookie Upload Support</name>
+      <description>Endpoint for uploading browser cookies (Netscape format) to access authenticated or age-restricted content</description>
+      <file_locations>
+        <location>fly.io backend/main.py</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>FFmpeg Video Processing</name>
+      <description>Post-processing pipeline that converts downloaded videos to MP4 format using FFmpegVideoConvertor, merges best video+audio streams, and handles format conversion</description>
+      <file_locations>
+        <location>fly.io backend/main.py</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Fly.io Cloud Deployment</name>
+      <description>Docker containerized deployment with auto-scaling configuration (0 to N machines), 1GB RAM, shared CPU, running in Seattle region</description>
+      <file_locations>
+        <location>fly.io backend/Dockerfile</location>
+        <location>fly.io backend/fly.toml</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Gallery Launcher</name>
+      <description>Android intent integration that opens the device&apos;s gallery app to view downloaded videos using android_intent_plus plugin</description>
+      <file_locations>
+        <location>x_video_downloader_flutter_frontend/lib/main.dart</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Progress Tracking</name>
+      <description>Real-time download progress indicator showing percentage completion based on Content-Length header and received bytes</description>
+      <file_locations>
+        <location>x_video_downloader_flutter_frontend/lib/main.dart</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Error Handling</name>
+      <description>Comprehensive error handling for network failures, HTTP status codes, JSON error responses from backend, and file system operations</description>
+      <file_locations>
+        <location>x_video_downloader_flutter_frontend/lib/main.dart</location>
+        <location>fly.io backend/main.py</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Smart Deep Link Validation</name>
+      <description>Implement server-side URL validation before download attempts. Check for unsupported content types, age-restricted content requiring auth, private/deleted videos, and region locks. Return early with helpful error messages to avoid wasted bandwidth.</description>
+    </feature>
+    <feature>
+      <name>Enhanced Error Handling &amp; User Feedback</name>
+      <description>Implement comprehensive error categorization with user-friendly messages for common failure scenarios like network timeouts, invalid URLs, unsupported platforms, and server errors. Add retry logic with exponential backoff for transient failures.</description>
+    </feature>
+    <feature>
+      <name>Download History &amp; Management</name>
+      <description>Create a local SQLite database to track all downloads with metadata (URL, platform, timestamp, file size, status). Build a history screen allowing users to view past downloads, retry failed downloads, and delete old files.</description>
+    </feature>
+    <feature>
+      <name>Auto-Detect Clipboard URLs</name>
+      <description>Automatically detect and offer to download video URLs when user copies them to clipboard. Show a non-intrusive bottom sheet or notification when a supported video URL is detected, with one-tap download initiation.</description>
+    </feature>
+    <feature>
+      <name>Download Speed Optimization</name>
+      <description>Implement concurrent chunk downloading for large files using HTTP range requests. Add download speed throttling options and intelligent CDN selection to maximize throughput. Cache video metadata server-side to reduce API calls.</description>
+    </feature>
+    <feature>
+      <name>Cross-App Share Integration</name>
+      <description>Add ability to share downloaded videos directly to other apps (social media, messaging, cloud storage). Implement Flutter share sheet integration and include video metadata in shared content when supported by target apps.</description>
+    </feature>
+    <feature>
+      <name>In-App Platform Authentication</name>
+      <description>Add OAuth login buttons for major platforms (Twitter, Instagram, TikTok) to streamline authenticated content access. Securely store tokens using flutter_secure_storage and automatically refresh when expired, eliminating manual cookie uploads.</description>
+    </feature>
+    <feature>
+      <name>Download Queue with Pause/Resume</name>
+      <description>Implement a robust queue management system supporting concurrent downloads (configurable limit), pause/resume functionality, progress persistence across app restarts, and automatic retry for failed downloads with notification support.</description>
+    </feature>
+    <feature>
+      <name>Multi-Video Album/Media Group Downloads</name>
+      <description>Detect and handle posts with multiple videos (Twitter threads, Instagram albums, Reddit multi-media posts). Present users with a list of available videos in the group, allow individual selection or batch download all with a queue system.</description>
+    </feature>
+    <feature>
+      <name>Background Download Service (Android)</name>
+      <description>Implement foreground service with notification for Android to continue downloads when app is backgrounded or screen is off. Use WorkManager for reliable background task execution with proper notification controls and battery optimization.</description>
+    </feature>
+    <feature>
+      <name>Video Quality &amp; Format Selection</name>
+      <description>Add quality selection UI before download starts, showing available formats/resolutions for each video. Allow users to choose between quality vs file size, with options for audio-only extraction and format preferences (MP4, WEBM, etc.).</description>
+    </feature>
+    <feature>
+      <name>WiFi-Only Download Mode</name>
+      <description>Add setting to restrict downloads to WiFi connections only. Implement network state monitoring using connectivity_plus to pause active downloads when switching to mobile data and auto-resume when WiFi is reconnected.</description>
+    </feature>
+    <feature>
+      <name>Video Preview Thumbnails</name>
+      <description>Generate and display video thumbnails in the download history and queue. Implement server-side thumbnail extraction using ffmpeg or fetch from platform APIs when available, with local caching to reduce bandwidth.</description>
+    </feature>
+    <feature>
+      <name>Dark Theme &amp; Customization</name>
+      <description>Implement full dark theme support with system-aware theme switching (follow Android 10+ system settings). Add accent color customization and theme options (light, dark, system) with smooth theme transitions.</description>
+    </feature>
+    <feature>
+      <name>Batch URL Import</name>
+      <description>Allow users to import multiple URLs at once via text file upload, bulk paste from clipboard, or share multiple links from other apps. Validate all URLs before adding to queue and show preview of pending batch downloads.</description>
+    </feature>
+    <feature>
+      <name>Custom Filename Templates</name>
+      <description>Let users define custom filename templates using placeholders like {platform}, {uploader}, {title}, {date}, {quality}. Provide sensible defaults and allow per-platform template configuration for organized local libraries.</description>
+    </feature>
+    <feature>
+      <name>Download Statistics &amp; Analytics</name>
+      <description>Track and display statistics like total downloads, success rate, most-used platforms, bandwidth consumed, and average download speed. Show charts and trends over time with data export capability.</description>
+    </feature>
+    <feature>
+      <name>Test project tooling and workspace integration</name>
+      <description>test that you can work in this project effectively and use tools</description>
+    </feature>
+    <feature>
+      <name>Scheduled Downloads</name>
+      <description>Allow users to schedule downloads for specific times (e.g., overnight during off-peak hours). Integrate with Android&apos;s JobScheduler for efficient scheduling with WiFi-only option and queue processing automation.</description>
+    </feature>
+    <feature>
+      <name>Storage Usage Dashboard</name>
+      <description>Build a storage management screen showing total space used by downloaded videos, breakdown by platform, and largest files. Include one-tap cleanup to remove old or failed downloads, with customizable auto-cleanup rules (e.g., delete after 30 days).</description>
+    </feature>
+    <feature>
+      <name>Subtitle &amp; Caption Download</name>
+      <description>Add ability to download video subtitles/captions when available. Support multiple formats (SRT, VTT, ASS) with language selection UI. Auto-embed subtitles in MP4 container or save as separate sidecar file based on user preference.</description>
+    </feature>
+  </implemented_features>
+
+  <additional_requirements>
+    <requirement>Android device with scoped storage support (Android 10+)</requirement>
+    <requirement>FFmpeg must be installed in backend environment (/usr/bin/ffmpeg)</requirement>
+    <requirement>Network connectivity for backend API communication</requirement>
+    <requirement>App requires storage permissions on Android</requirement>
+    <requirement>Backend deployed on Fly.io with 1GB RAM minimum</requirement>
+    <requirement>MP4 as mandatory output format for compatibility</requirement>
+    <requirement>Must comply with Google Play Store policies (no YouTube downloads in published versions)</requirement>
+    <requirement>Browser cookies file (Netscape format) optional for authenticated content</requirement>
+    <requirement>Python 3.12+ for backend development</requirement>
+    <requirement>Flutter SDK for frontend development and building</requirement>
+  </additional_requirements>
+
+  <development_guidelines>
+    <guideline>Local-first architecture prioritizing user privacy and compliance</guideline>
+    <guideline>Platform-specific optimizations for each video source (Referer, User-Agent, client modes)</guideline>
+    <guideline>Graceful error handling with user-friendly status messages</guideline>
+    <guideline>Use yt-dlp as the primary extraction engine for reliability and broad platform support</guideline>
+    <guideline>Scoped storage compliance for Android 10+ (avoid MANAGE_EXTERNAL_STORAGE permission)</guideline>
+    <guideline>Background download capability with progress tracking</guideline>
+    <guideline>Clean separation between Flutter UI and FastAPI backend logic</guideline>
+    <guideline>Docker containerization for consistent backend deployment</guideline>
+    <guideline>Auto-scaling configuration to minimize costs when idle</guideline>
+    <guideline>MethodChannel pattern for native Android integrations</guideline>
+    <guideline>Timestamp-based file naming to prevent conflicts</guideline>
+    <guideline>MP4 as universal output format for maximum device compatibility</guideline>
+  </development_guidelines>
+
+  <implementation_roadmap>
+    <phase>
+      <name>Initial X/Twitter Downloader</name>
+      <status>completed</status>
+      <description>Basic Flutter app with FastAPI backend for downloading X/Twitter videos</description>
+    </phase>
+    <phase>
+      <name>Multi-Platform Support</name>
+      <status>completed</status>
+      <description>Expanded support to Rumble, Twitch, Reddit with platform-specific optimizations</description>
+    </phase>
+    <phase>
+      <name>Share Intent Integration</name>
+      <status>completed</status>
+      <description>Added ability to receive shared URLs from other apps on Android</description>
+    </phase>
+    <phase>
+      <name>Gallery Integration</name>
+      <status>completed</status>
+      <description>Implemented media scanner integration and gallery launcher button</description>
+    </phase>
+    <phase>
+      <name>Fly.io Deployment</name>
+      <status>completed</status>
+      <description>Deployed backend to Fly.io with Docker containerization and auto-scaling</description>
+    </phase>
+    <phase>
+      <name>Cookie Support</name>
+      <status>completed</status>
+      <description>Added cookie upload endpoint for authenticated content access</description>
+    </phase>
+    <phase>
+      <name>Platform Expansion (Instagram, TikTok, YouTube, Vimeo)</name>
+      <status>completed</status>
+      <description>Added specific optimizations for additional platforms with custom headers and client modes</description>
+    </phase>
+    <phase>
+      <name>Dailymotion and Vimeo Bug Fixes</name>
+      <status>in_progress</status>
+      <description>Resolving KeyError on Vimeo config_url and Dailymotion format detection issues</description>
+    </phase>
+    <phase>
+      <name>Media Groups/Albums Support</name>
+      <status>pending</status>
+      <description>Handle downloading multiple videos from album posts and media groups</description>
+    </phase>
+    <phase>
+      <name>Desktop Application</name>
+      <status>pending</status>
+      <description>Create Windows/macOS/Linux desktop versions of the Flutter app</description>
+    </phase>
+    <phase>
+      <name>Download Queue Management</name>
+      <status>pending</status>
+      <description>Implement queue system for batch downloads with pause/resume functionality</description>
+    </phase>
+    <phase>
+      <name>UI Enhancements</name>
+      <status>pending</status>
+      <description>Improve UI with download history, video preview thumbnails, and better status indicators</description>
+    </phase>
+  </implementation_roadmap>
+</project_specification>

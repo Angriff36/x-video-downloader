@@ -1,0 +1,19 @@
+{
+  "id": "download-analytics",
+  "category": "UI",
+  "title": "Download Statistics & Analytics",
+  "description": "Track and display statistics like total downloads, success rate, most-used platforms, bandwidth consumed, and average download speed. Show charts and trends over time with data export capability.",
+  "status": "backlog",
+  "priority": 3,
+  "complexity": "moderate",
+  "dependencies": [
+    "download-history"
+  ],
+  "createdAt": "2026-04-30T21:44:14.590Z",
+  "updatedAt": "2026-04-30T22:40:46.044Z",
+  "model": "GLM-5",
+  "thinkingLevel": "none",
+  "branchName": "main",
+  "descriptionHistory": [],
+  "summary": "## Summary: Download Analytics Feature\n\n### Changes Implemented\n- Planned analytics feature architecture for both backend (Fly.io/Python) and frontend (Flutter)\n- Identified project structure: Flutter frontend + Fly.io backend\n- Unable to write files due to missing core Claude Code filesystem tools\n\n### Files Modified\n- None (tool access issue prevented file creation)\n\n### Notes for Developer\n- Core Claude Code tools (Bash, Read, Write, Edit, Glob, Grep) are not available in this environment\n- The implementation plan is ready but needs filesystem access to create files\n- Recommended: Restart the Claude Code session or check tool configuration"
+}

@@ -1,0 +1,18 @@
+{
+  "id": "wifi-only-downloads",
+  "category": "Core",
+  "title": "WiFi-Only Download Mode",
+  "description": "Add setting to restrict downloads to WiFi connections only. Implement network state monitoring using connectivity_plus to pause active downloads when switching to mobile data and auto-resume when WiFi is reconnected.",
+  "status": "in_progress",
+  "priority": 2,
+  "complexity": "simple",
+  "dependencies": [
+    "download-queue-system"
+  ],
+  "createdAt": "2026-04-30T21:44:14.587Z",
+  "updatedAt": "2026-04-30T23:42:05.962Z",
+  "model": "GLM-5",
+  "thinkingLevel": "none",
+  "branchName": "main",
+  "descriptionHistory": []
+}

@@ -1,0 +1,17 @@
+{
+  "id": "dark-theme-support",
+  "category": "UI",
+  "title": "Dark Theme & Customization",
+  "description": "Implement full dark theme support with system-aware theme switching (follow Android 10+ system settings). Add accent color customization and theme options (light, dark, system) with smooth theme transitions.",
+  "status": "verified",
+  "priority": 3,
+  "complexity": "simple",
+  "dependencies": [],
+  "createdAt": "2026-04-30T21:44:14.595Z",
+  "updatedAt": "2026-04-30T23:56:11.891Z",
+  "model": "GLM-5",
+  "thinkingLevel": "none",
+  "branchName": "main",
+  "descriptionHistory": [],
+  "summary": "## Summary: Dark Theme & Customization\n\n### Changes Implemented\n- Created a `ThemeProvider` class that manages theme mode (light/dark/system) and accent color selection, persisted to `shared_preferences`\n- Defined complete Material 3 light and dark `ThemeData` with proper color schemes generated from seed colors, including AppBar, Card, Button, Input, BottomSheet, Chip, Divider, and SnackBar themes\n- Built a `ThemeSettingsScreen` with radio group for theme mode (System/Light/Dark), a color picker grid with 6 accent colors (Green, Blue, Purple, Orange, Red, Teal), and a live preview card\n- Integrated theme into `MyApp` using `ListenableBuilder` for reactive theme switching with smooth transitions (Cupertino page transitions)\n- Added a palette icon button in the main screen's AppBar to access theme settings\n- Updated hardcoded button colors (Gallery, Download, Buy Me a Coffee, media group download, quality picker) to use theme-aware `colorScheme` colors\n- Used `RadioGroup` widget (Flutter 3.32+) for deprecation-free theme mode selection\n\n### Files Modified\n- `lib/theme_provider.dart` (new) - Theme mode + accent color state management with persistence\n- `lib/app_theme.dart` (new) - Light/dark ThemeData definitions using Material 3 color schemes\n- `lib/theme_settings_screen.dart` (new) - Theme customization UI with mode picker, color grid, preview\n- `lib/main.dart` (modified) - Added theme provider init, wrapped MaterialApp with ListenableBuilder, added theme settings button, updated hardcoded colors to theme-aware\n\n### Notes for Developer\n- Theme preference persists across app restarts via SharedPreferences (keys: `theme_mode`, `theme_accent`)\n- System mode automatically follows Android 10+ dark/light system setting\n- 6 accent colors available; adding more is a one-line enum addition in `theme_provider.dart`\n- Cupertino page transitions are used for smooth theme switching without flicker\n- The pre-existing `share_service.dart` info-level lint is unrelated to this feature"
+}

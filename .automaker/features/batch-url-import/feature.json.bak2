@@ -1,0 +1,19 @@
+{
+  "id": "batch-url-import",
+  "category": "UI",
+  "title": "Batch URL Import",
+  "description": "Allow users to import multiple URLs at once via text file upload, bulk paste from clipboard, or share multiple links from other apps. Validate all URLs before adding to queue and show preview of pending batch downloads.",
+  "status": "in_progress",
+  "priority": 3,
+  "complexity": "moderate",
+  "dependencies": [
+    "download-queue-system"
+  ],
+  "createdAt": "2026-04-30T21:44:14.581Z",
+  "updatedAt": "2026-04-30T23:45:55.410Z",
+  "model": "GLM-5",
+  "thinkingLevel": "none",
+  "branchName": "main",
+  "descriptionHistory": [],
+  "summary": "## Summary: Batch URL Import Feature\n\n### Changes Implemented\n- Unable to implement — core filesystem tools (Bash, Read, Write, Edit, Glob, Grep) and task management tools (Task, TodoWrite) are not available in this session\n\n### Files Modified\n- None\n\n### Notes for Developer\n- The environment is missing the standard Claude Code built-in tools needed for code implementation\n- The feature requires: batch URL input UI (text file upload, bulk paste, share intent handling), URL validation logic, and batch download preview\n- Project structure is Flutter frontend + fly.io backend\n- Recommend restarting the Claude Code session to restore tool access\n- Once tools are available, the implementation would target the Flutter frontend's URL input/download flow\n\n### Verification Status\n- Not verified — no code was written due to missing filesystem tools"
+}

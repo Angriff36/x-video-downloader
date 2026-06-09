@@ -1,0 +1,19 @@
+{
+  "id": "batch-url-import",
+  "category": "UI",
+  "title": "Batch URL Import",
+  "description": "Allow users to import multiple URLs at once via text file upload, bulk paste from clipboard, or share multiple links from other apps. Validate all URLs before adding to queue and show preview of pending batch downloads.",
+  "status": "verified",
+  "priority": 3,
+  "complexity": "moderate",
+  "dependencies": [
+    "download-queue-system"
+  ],
+  "createdAt": "2026-04-30T21:44:14.581Z",
+  "updatedAt": "2026-04-30T23:52:46.065Z",
+  "model": "GLM-5",
+  "thinkingLevel": "none",
+  "branchName": "main",
+  "descriptionHistory": [],
+  "summary": "## Summary: Batch URL Import\n\n### Changes Implemented\n- Created `batch_import_screen.dart` — a full-featured batch URL import screen with:\n  - **Bulk paste from clipboard**: App bar button reads system clipboard and appends to input field\n  - **Text file upload**: Uses `file_picker` (already in pubspec.yaml) to load `.txt`/`.csv` files containing URLs\n  - **Manual multi-line text input**: TextField with 4 lines for pasting multiple URLs\n  - **URL validation**: Validates all URLs against the same platform regex used in main.dart; classifies as valid (supported platform) or invalid (unsupported platform / not a URL); deduplicates automatically\n  - **Preview with management**: Shows valid URLs with platform icons and a summary count; invalid URLs shown with error reasons; individual URLs can be removed via swipe-to-dismiss or close button\n  - **Batch queue import**: \"Add N URLs to Queue\" button adds all valid URLs as `QueueItem` entries via the existing `addBatchToQueue()` method\n  - **Share intent integration**: Accepts `initialText` parameter for pre-populating when multiple URLs are shared from other apps\n- Modified `main.dart`:\n  - Added import for `batch_import_screen.dart`\n  - Added batch import icon button (playlist_add) in the URL text field's suffixIcon area\n  - Refactored `_listenForSharedText()` into `_handleSharedText()` that detects single vs multiple URLs:\n    - Single URL: auto-probes as before\n    - Multiple URLs: opens BatchImportScreen with the shared text pre-populated and auto-validated\n    - No URLs: falls back to setting text as-is\n\n### Files Modified\n- `x_video_downloader_flutter_frontend/lib/batch_import_screen.dart` (created)\n- `x_video_downloader_flutter_frontend/lib/main.dart` (edited: import, URL field suffixIcon, shared text handler)\n\n### Notes for Developer\n- The `batch_import_screen.dart` has zero analysis issues (verified with `flutter analyze`)\n- The only error in the project (`app_theme.dart:36`) is pre-existing and unrelated to this feature\n- `file_picker` was already listed in pubspec.yaml but was previously unused — it is now utilized for the file upload feature\n- URLs added via batch import get a placeholder title `\"Pending: <Platform>\"` since probing each URL individually before adding to queue would be slow; the actual title is resolved when the download starts\n- The batch import leverages the existing `DownloadQueueManager.addBatchToQueue()` which handles persistence, queue processing, and concurrency"
+}

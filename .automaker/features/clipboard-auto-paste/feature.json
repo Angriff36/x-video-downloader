@@ -1,0 +1,17 @@
+{
+  "id": "clipboard-auto-paste",
+  "category": "UI",
+  "title": "Auto-Detect Clipboard URLs",
+  "description": "Automatically detect and offer to download video URLs when user copies them to clipboard. Show a non-intrusive bottom sheet or notification when a supported video URL is detected, with one-tap download initiation.",
+  "status": "verified",
+  "priority": 2,
+  "complexity": "simple",
+  "dependencies": [],
+  "createdAt": "2026-04-30T21:44:14.580Z",
+  "updatedAt": "2026-04-30T23:18:24.466Z",
+  "model": "GLM-5",
+  "thinkingLevel": "none",
+  "branchName": "main",
+  "descriptionHistory": [],
+  "summary": "## Summary: Auto-Detect Clipboard URLs\n\n### Changes Implemented\n- Added `clipboard_watcher: ^0.3.0` dependency for real-time clipboard change detection\n- Created a comprehensive URL detection regex (`_videoUrlPattern`) that matches URLs from 8 video platforms: X/Twitter, YouTube, Instagram, TikTok, Facebook, Vimeo, Reddit, and Dailymotion\n- Added `_extractVideoUrl()` helper function to extract the first matching video URL from arbitrary clipboard text\n- Mixed `ClipboardListener` into `_DownloaderScreenState` to receive clipboard change events\n- Registered/unregistered clipboard watcher in `initState()`/`dispose()` lifecycle methods\n- Implemented `onClipboardChanged()` handler that:\n  - Skips if a clipboard sheet is already visible (prevents duplicate sheets)\n  - Reads clipboard text via Flutter's `Clipboard.getData()`\n  - Extracts video URLs using the regex pattern\n  - Deduplicates against the last detected URL and the current URL field text\n  - Shows the clipboard URL bottom sheet\n- Created `_showClipboardUrlSheet()` method that displays a non-intrusive bottom sheet with:\n  - \"Video URL detected\" header\n  - The detected URL displayed in monospace text\n  - A green \"Download\" button that auto-pastes the URL and initiates `_probeUrl()` (one-tap download)\n  - A \"Dismiss\" button to close without action\n  - State tracking (`_clipboardSheetVisible`) to prevent duplicate sheets\n- State variables added: `_lastClipboardUrl` (dedup), `_clipboardSheetVisible` (sheet guard)\n\n### Files Modified\n- `x_video_downloader_flutter_frontend/pubspec.yaml` - Added `clipboard_watcher: ^0.3.0` dependency\n- `x_video_downloader_flutter_frontend/lib/main.dart` - All clipboard detection logic and UI\n\n### Notes for Developer\n- On Android 10+, clipboard watching only works when the app is in the foreground. This is a platform limitation, not a bug. The typical flow is: user copies a URL in another app → switches to this app → clipboard change is detected → bottom sheet appears\n- The URL regex covers 8 major platforms. If the backend supports additional platforms, the `_videoUrlPattern` regex should be updated to include those patterns\n- `flutter analyze` passes with zero issues"
+}

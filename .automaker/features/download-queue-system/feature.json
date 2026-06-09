@@ -1,0 +1,19 @@
+{
+  "id": "download-queue-system",
+  "category": "Core",
+  "title": "Download Queue with Pause/Resume",
+  "description": "Implement a robust queue management system supporting concurrent downloads (configurable limit), pause/resume functionality, progress persistence across app restarts, and automatic retry for failed downloads with notification support.",
+  "status": "verified",
+  "priority": 2,
+  "complexity": "complex",
+  "dependencies": [
+    "download-history"
+  ],
+  "createdAt": "2026-04-30T21:44:14.574Z",
+  "updatedAt": "2026-04-30T23:29:10.657Z",
+  "model": "GLM-5",
+  "thinkingLevel": "none",
+  "branchName": "main",
+  "descriptionHistory": [],
+  "summary": "## Summary: Download Queue with Pause/Resume\n\n### Changes Implemented\n- **New `QueueItem` model** (`queue_item.dart`): Full lifecycle state machine (queued/downloading/paused/completed/failed/cancelled) with progress tracking, retry counting, speed calculation (`speedBps`, `speedText`, `etaText`), and SQLite serialization\n- **Database migration v2→v3** (`download_database.dart`): Added `queue_items` table with full schema including `speedBps` column, indexes on status and createdAt, CRUD operations for queue items, and migration path from existing v1 databases\n- **`DownloadQueueManager`** (`download_queue_manager.dart`): Core singleton manager implementing:\n  - Concurrent downloads with configurable limit (1-5, default 2)\n  - Pause/resume individual items and pause/resume all\n  - Automatic retry with exponential backoff for transient failures (network, timeout, server errors) up to 3 retries\n  - Progress persistence to SQLite every ~5% change, survives app restarts\n  - Stream-based per-item progress updates via `watchItem()`\n  - HTTP stream-based downloads with cancellation support\n  - Global pause/resume toggle\n- **Queue management UI** (`download_queue_screen.dart`): Full queue screen with:\n  - Grouped sections (Downloading/Paused/Queued/Failed/Completed)\n  - Per-item pause/resume/retry/cancel actions\n  - Real-time progress bars, speed (KB/s, MB/s), and ETA display\n  - Summary stats bar with concurrent download count selector\n  - Swipe-to-dismiss removal\n  - Clear finished/cancel all bulk operations\n- **Main screen integration** (`main.dart`): \n  - All downloads (single and batch) now route through the queue manager\n  - Queue badge in app bar showing active+pending count\n  - Live queue status indicator on home screen when downloads are active\n  - \"View Queue\" button replacing old inline batch progress display\n  - Removed old `DownloadTask`, `_downloadSingleVideo`, `_processBatchQueue` code\n  - Global queue manager initialized at app startup with persisted state recovery\n\n### Files Modified\n- `x_video_downloader_flutter_frontend/lib/queue_item.dart` (new)\n- `x_video_downloader_flutter_frontend/lib/download_queue_manager.dart` (new)\n- `x_video_downloader_flutter_frontend/lib/download_queue_screen.dart` (new)\n- `x_video_downloader_flutter_frontend/lib/download_database.dart` (modified - added queue_items table, v2/v3 migration)\n- `x_video_downloader_flutter_frontend/lib/main.dart` (modified - integrated queue system, removed old batch download code)\n\n### Notes for Developer\n- Flutter analyze passes with zero errors and zero warnings (only a pre-existing info in `share_service.dart`)\n- No new dependencies required - uses existing `sqflite`, `http`, and Flutter SDK\n- The `DownloadQueueManager` is a `ChangeNotifier` - UI widgets subscribe via `addListener()` for reactive updates\n- On app restart, items that were \"downloading\" are reset to \"queued\" since HTTP streams can't be resumed mid-transfer\n- The concurrent download limit is configurable via the queue screen's settings chip (1-5)\n- Auto-retry only applies to transient errors (network timeout, server errors); non-retryable errors (404, auth required) fail immediately"
+}

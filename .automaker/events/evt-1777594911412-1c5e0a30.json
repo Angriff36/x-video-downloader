@@ -1,0 +1,10 @@
+{
+  "id": "evt-1777594911412-1c5e0a30",
+  "trigger": "feature_success",
+  "timestamp": "2026-05-01T00:21:51.412Z",
+  "projectPath": "C:\\Projects\\x_video_downloader",
+  "projectName": "x_video_downloader",
+  "featureId": "subtitle-download-support",
+  "featureName": "Subtitle & Caption Download",
+  "passes": true
+}

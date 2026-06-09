@@ -1,0 +1,19 @@
+{
+  "id": "download-analytics",
+  "category": "UI",
+  "title": "Download Statistics & Analytics",
+  "description": "Track and display statistics like total downloads, success rate, most-used platforms, bandwidth consumed, and average download speed. Show charts and trends over time with data export capability.",
+  "status": "verified",
+  "priority": 3,
+  "complexity": "moderate",
+  "dependencies": [
+    "download-history"
+  ],
+  "createdAt": "2026-04-30T21:44:14.590Z",
+  "updatedAt": "2026-04-30T23:59:43.575Z",
+  "model": "GLM-5",
+  "thinkingLevel": "none",
+  "branchName": "main",
+  "descriptionHistory": [],
+  "summary": "## Summary: Download Statistics & Analytics\n\n### Changes Implemented\n- Created `download_analytics.dart` - Data models for analytics (DownloadAnalytics, PlatformStats, DailyCount, DailyBandwidth)\n- Created `analytics_service.dart` - Service that queries SQLite and computes analytics aggregates\n- Created `download_analytics_screen.dart` - Full analytics dashboard with:\n  - Time range selector (7/14/30/90 days, all time)\n  - Overview stat cards (total downloads, success rate, bandwidth, avg speed)\n  - Line chart for download trends (completed vs failed over time)\n  - Bar chart for bandwidth usage over time\n  - Platform breakdown with proportional bars\n  - Pie chart success rate indicator\n  - Data export to JSON and CSV with share functionality\n- Extended `download_database.dart` with 7 new analytics query methods\n- Added `fl_chart: ^0.70.2` dependency to pubspec.yaml\n- Added analytics navigation (bar_chart icon) in main.dart AppBar\n\n### Files Modified\n- `x_video_downloader_flutter_frontend/lib/download_analytics.dart` (new)\n- `x_video_downloader_flutter_frontend/lib/analytics_service.dart` (new)\n- `x_video_downloader_flutter_frontend/lib/download_analytics_screen.dart` (new)\n- `x_video_downloader_flutter_frontend/lib/download_database.dart` (modified - added analytics queries)\n- `x_video_downloader_flutter_frontend/lib/main.dart` (modified - added import + nav button)\n- `x_video_downloader_flutter_frontend/pubspec.yaml` (modified - added fl_chart)\n\n### Notes for Developer\n- All analytics are computed client-side from the local SQLite database — no backend changes needed\n- Flutter analyze shows zero errors from the new analytics files (pre-existing errors in other files are unrelated)\n- Data export generates both JSON and CSV formats; CSV can be shared directly via the share sheet\n- Charts use the `fl_chart` package with interactive tooltips and touch data\n- The feature integrates into the existing navigation pattern (AppBar icon button)"
+}

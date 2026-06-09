@@ -1,0 +1,19 @@
+{
+  "id": "download-scheduling",
+  "category": "Core",
+  "title": "Scheduled Downloads",
+  "description": "Allow users to schedule downloads for specific times (e.g., overnight during off-peak hours). Integrate with Android's JobScheduler for efficient scheduling with WiFi-only option and queue processing automation.",
+  "status": "verified",
+  "priority": 3,
+  "complexity": "moderate",
+  "dependencies": [
+    "download-queue-system"
+  ],
+  "createdAt": "2026-04-30T21:44:14.583Z",
+  "updatedAt": "2026-05-01T00:05:27.625Z",
+  "model": "GLM-5",
+  "thinkingLevel": "none",
+  "branchName": "main",
+  "descriptionHistory": [],
+  "summary": "## Summary: Scheduled Downloads\n\n### Changes Implemented\n- **ScheduledDownload model** (`scheduled_download.dart`): Data model with support for one-time and recurring schedules (daily, weekdays, weekends, weekly), WiFi-only constraint, format selection, execution tracking, and computed next execution time.\n- **Database schema migration** (`download_database.dart`): Added `scheduled_downloads` table with migration from version 5 to 6, including indexes on status and scheduledTime. Full CRUD methods for scheduled downloads.\n- **DownloadScheduler service** (`download_scheduler.dart`): Core scheduling engine with a 60-second periodic timer that checks for due schedules, validates WiFi constraints, submits downloads to the queue manager, handles recurrence by advancing scheduled time, and tracks execution count.\n- **DownloadScheduleScreen UI** (`download_schedule_screen.dart`): Full screen with list of active schedules showing next execution time, recurrence, WiFi-only status, and execution count. FAB to add new scheduled downloads. Bottom sheet form with URL input, date/time pickers, recurrence selection (one-time/daily/weekdays/weekends/weekly), and WiFi-only toggle. Edit and cancel support via popup menus.\n- **Main app integration** (`main.dart`): Added global `DownloadScheduler` singleton, initialized in `main()` with queue manager and network monitor references. Added schedule icon button in AppBar and \"Scheduled Downloads\" button in the main screen body.\n\n### Files Modified\n- `lib/scheduled_download.dart` (created) — Scheduled download data model\n- `lib/download_scheduler.dart` (created) — Scheduler service with periodic check timer\n- `lib/download_schedule_screen.dart` (created) — UI for managing scheduled downloads\n- `lib/download_database.dart` (modified) — Added `scheduled_downloads` table, migration v5→v6, CRUD methods\n- `lib/main.dart` (modified) — Added global scheduler, initialization, navigation to schedule screen\n\n### Notes for Developer\n- The scheduler uses a simple Timer.periodic(60s) approach rather than Android's native JobScheduler. This works while the app is running but won't wake the app if it's been killed by the OS. For true background scheduling (app killed/device reboot), you'd need to add a platform channel using Android's WorkManager or a similar plugin like `android_alarm_manager_plus` or `workmanager`.\n- Database migration is automatic: existing users on v5 will get the new table created on next app launch.\n- The `nextExecution` computed property on `ScheduledDownload` handles recurrence calculation for daily, weekdays, weekends, and weekly patterns.\n- Flutter analyze passes with 0 errors, 0 warnings from new code (only pre-existing warnings remain)."
+}

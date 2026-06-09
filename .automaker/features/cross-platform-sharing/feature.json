@@ -1,0 +1,19 @@
+{
+  "id": "cross-platform-sharing",
+  "category": "UI",
+  "title": "Cross-App Share Integration",
+  "description": "Add ability to share downloaded videos directly to other apps (social media, messaging, cloud storage). Implement Flutter share sheet integration and include video metadata in shared content when supported by target apps.",
+  "status": "verified",
+  "priority": 2,
+  "complexity": "simple",
+  "dependencies": [
+    "download-history"
+  ],
+  "createdAt": "2026-04-30T21:44:14.593Z",
+  "updatedAt": "2026-04-30T23:25:46.084Z",
+  "model": "GLM-5",
+  "thinkingLevel": "none",
+  "branchName": "main",
+  "descriptionHistory": [],
+  "summary": "## Summary: Cross-App Share Integration\n\n### Changes Implemented\n- Added `share_plus: ^10.1.4` dependency to `pubspec.yaml`\n- Created `share_service.dart` - a share service helper that handles sharing video files with metadata via the platform share sheet. Uses `Share.shareXFiles()` for completed downloads with existing files, falls back to text-only sharing (title + URL) for deleted/failed items.\n- Added share icon button to each completed download item in the history list (visible next to the \"more\" button)\n- Added \"Share Video\" button to the download detail bottom sheet (only visible for completed downloads with a file path)\n- Share text includes video title and source URL as metadata\n- Properly handles iPad share position origin to avoid crashes\n\n### Files Modified\n- `x_video_downloader_flutter_frontend/pubspec.yaml` - added `share_plus: ^10.1.4`\n- `x_video_downloader_flutter_frontend/lib/share_service.dart` - new file, share service helper\n- `x_video_downloader_flutter_frontend/lib/download_history_screen.dart` - added share buttons to list items and detail sheet, added `_shareRecord` method, imported `share_service.dart`\n\n### Notes for Developer\n- The `flutter analyze` shows one info-level lint (`use_build_context_synchronously`) in `share_service.dart:28` which is safe since the BuildContext is used before the async gap and the caller handles mounted checks.\n- Share button only appears for downloads with `completed` status and a non-empty file path, preventing sharing of missing or failed downloads.\n- Build verified: `flutter build apk --debug` succeeds."
+}
