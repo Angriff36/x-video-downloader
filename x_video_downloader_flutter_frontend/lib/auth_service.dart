@@ -100,15 +100,31 @@ class AuthService extends ChangeNotifier {
   /// Get the token for a platform, or null.
   AuthToken? tokenFor(String platform) => _tokens[platform];
 
+  /// Normalize a platform name (display name or URL-detected name) to the
+  /// storage key used for tokens. e.g. 'X/Twitter' -> 'twitter', 'Instagram'
+  /// -> 'instagram'. Keeps already-normalized keys unchanged.
+  static String normalizePlatform(String platform) {
+    switch (platform.toLowerCase()) {
+      case 'x':
+      case 'x/twitter':
+      case 'twitter':
+        return 'twitter';
+      case 'instagram':
+        return 'instagram';
+      default:
+        return platform.toLowerCase();
+    }
+  }
+
   /// Get a valid access token for a platform, refreshing if needed.
   Future<String?> getValidAccessToken(String platform) async {
-    final token = _tokens[platform];
+    final token = _tokens[normalizePlatform(platform)];
     if (token == null) return null;
     if (token.isValid) return token.accessToken;
 
     // Try to refresh
     if (token.refreshToken != null) {
-      final result = await refreshToken(platform);
+      final result = await refreshToken(normalizePlatform(platform));
       return result.success ? result.token?.accessToken : null;
     }
     return null;

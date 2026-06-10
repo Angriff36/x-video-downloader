@@ -776,8 +776,6 @@ class DownloadQueueManager extends ChangeNotifier {
         return 'twitter';
       case 'instagram':
         return 'instagram';
-      case 'tiktok':
-        return 'tiktok';
       default:
         return null;
     }

@@ -4,7 +4,9 @@
 /// with real credentials from each platform's developer portal:
 ///   - Twitter: https://developer.twitter.com
 ///   - Instagram: https://developers.facebook.com
-///   - TikTok: https://developers.tiktok.com
+///
+/// Note: X (Twitter) and Instagram now authenticate via WebView session-cookie
+/// capture (see x_login_screen.dart / instagram_login_screen.dart), not OAuth.
 class PlatformAuthConfig {
   final String platform;
   final String displayName;
@@ -54,18 +56,8 @@ class PlatformAuthConfig {
     discoveryUrl: '',
   );
 
-  /// TikTok OAuth2 config.
-  static const tiktok = PlatformAuthConfig(
-    platform: 'tiktok',
-    displayName: 'TikTok',
-    clientId: 'YOUR_TIKTOK_CLIENT_KEY',
-    clientSecret: 'YOUR_TIKTOK_CLIENT_SECRET',
-    redirectUrl: 'com.angriff.x_video_downloader://oauthredirect',
-    scopes: ['user.info.basic'],
-    authorizationEndpoint: 'https://www.tiktok.com/v2/auth/authorize',
-    tokenEndpoint: 'https://open.tiktokapis.com/v2/oauth/token/',
-    discoveryUrl: '',
-  );
+  // TikTok auth intentionally omitted: TikTok downloads use the TikWM API,
+  // which needs no login, so an auth option would only mislead users.
 
   /// Get config for a platform by its name.
   static PlatformAuthConfig? forPlatform(String platformName) {
@@ -75,15 +67,13 @@ class PlatformAuthConfig {
         return twitter;
       case 'instagram':
         return instagram;
-      case 'tiktok':
-        return tiktok;
       default:
         return null;
     }
   }
 
   /// All platform configs.
-  static List<PlatformAuthConfig> get all => [twitter, instagram, tiktok];
+  static List<PlatformAuthConfig> get all => [twitter, instagram];
 
   /// Whether this platform has real credentials configured (not placeholder).
   bool get isConfigured =>

@@ -10,6 +10,7 @@ import logging
 import functools
 import json
 import hashlib
+import tempfile
 from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Optional
@@ -402,11 +403,18 @@ def _extract_tiktok(url: str) -> dict | None:
     """Extract TikTok video info via TikWM API (free, no auth, works from servers)."""
     import requests as _req
     try:
-        # Resolve short URLs to get the video ID
-        if 'vm.tiktok.com' in url or 'vt.tiktok.com' in url:
+        # Resolve short/share URLs to the canonical URL so we can read the video ID.
+        # Covers vm./vt. short links AND the app's "Copy link" format: tiktok.com/t/XXXX
+        if ('vm.tiktok.com' in url or 'vt.tiktok.com' in url
+                or re.search(r'tiktok\.com/t/', url, re.IGNORECASE)):
             resp = _req.head(url, allow_redirects=True, timeout=10,
                              headers={'User-Agent': 'Mozilla/5.0 (Linux; Android 13) Chrome/115.0.0.0 Mobile'})
             url = resp.url
+
+        # Photo/slideshow posts have no video stream — TikWM and yt-dlp can't extract them.
+        if re.search(r'/photo/\d+', url):
+            logger.warning(f"[TikTok] Photo/slideshow post is not a video, cannot extract: {url}")
+            return None
 
         # Extract video ID
         video_id = None
@@ -819,6 +827,54 @@ def _get_headers(url: str) -> dict:
     return headers
 
 
+def _parse_cookie_string(raw: str) -> dict:
+    """Parse a 'name=value; name2=value2' cookie string into a dict.
+    Tolerates a bare token (no '=') by returning {} so the caller can fall back."""
+    cookies = {}
+    if not raw:
+        return cookies
+    for part in raw.split(';'):
+        part = part.strip()
+        if '=' in part:
+            name, _, value = part.partition('=')
+            name = name.strip()
+            value = value.strip()
+            if name:
+                cookies[name] = value
+    return cookies
+
+
+def _write_twitter_cookiefile(cookies: dict) -> str | None:
+    """Write X/Twitter auth cookies to a Netscape cookie file for yt-dlp.
+
+    yt-dlp's Twitter extractor reads auth_token + ct0 from its cookiejar
+    (via _get_cookies), NOT from http_headers, so a real cookiefile is required.
+    Cookies are scoped to .x.com so they also apply to api.x.com.
+    The file is keyed by a hash of the cookie values so each distinct session
+    reuses one file instead of accumulating temp files.
+    """
+    if not cookies.get('auth_token'):
+        return None
+    try:
+        digest = hashlib.sha256(
+            '|'.join(f'{k}={v}' for k, v in sorted(cookies.items())).encode()
+        ).hexdigest()[:16]
+        path = os.path.join(tempfile.gettempdir(), f'xcookies_{digest}.txt')
+        if not os.path.exists(path):
+            lines = ['# Netscape HTTP Cookie File', '']
+            for name, value in cookies.items():
+                if not value:
+                    continue
+                # domain  include_subdomains  path  secure  expiry  name  value
+                lines.append(f'.x.com\tTRUE\t/\tTRUE\t2147483647\t{name}\t{value}')
+            with open(path, 'w', encoding='utf-8') as fh:
+                fh.write('\n'.join(lines) + '\n')
+        return path
+    except Exception as e:
+        logger.warning(f"[X] Failed to write cookie file: {e}")
+        return None
+
+
 def _apply_auth_to_opts(ydl_opts: dict, request: Request, url: str) -> dict:
     """Apply authentication from request headers to yt-dlp options.
 
@@ -840,9 +896,22 @@ def _apply_auth_to_opts(ydl_opts: dict, request: Request, url: str) -> dict:
     ydl_opts['http_headers'] = headers
 
     # Platform-specific cookie injection
-    # For Twitter/X, the OAuth token can be used as a cookie
+    # For Twitter/X, the captured session is "auth_token=..; ct0=.." (WebView login).
+    # yt-dlp's Twitter extractor reads auth_token + ct0 from its cookiejar, so we
+    # must hand it a real cookiefile — http headers alone are not enough.
     if "x.com" in url or "twitter.com" in url:
-        ydl_opts['http_headers']['Cookie'] = f'auth_token={auth_token}'
+        cookies = _parse_cookie_string(auth_token)
+        if 'auth_token' not in cookies:
+            cookies['auth_token'] = auth_token  # legacy: bare token
+        cookiefile = _write_twitter_cookiefile(cookies)
+        if cookiefile:
+            ydl_opts['cookiefile'] = cookiefile
+        # Backup for the direct-stream (non-yt-dlp) path
+        ydl_opts['http_headers']['Cookie'] = '; '.join(
+            f'{k}={v}' for k, v in cookies.items() if v
+        )
+        if cookies.get('ct0'):
+            ydl_opts['http_headers']['x-csrf-token'] = cookies['ct0']
     elif "instagram.com" in url:
         # Instagram requires multiple cookies for proper authentication
         # sessionid is the primary auth cookie
@@ -852,8 +921,7 @@ def _apply_auth_to_opts(ydl_opts: dict, request: Request, url: str) -> dict:
         ydl_opts['extractor_args']['instagram'] = [
             'player_client=android',
         ]
-    elif "tiktok.com" in url:
-        ydl_opts['http_headers']['Cookie'] = f'sessionid={auth_token}'
+    # TikTok needs no auth — it is served via the TikWM API, not yt-dlp.
 
     return ydl_opts
 
