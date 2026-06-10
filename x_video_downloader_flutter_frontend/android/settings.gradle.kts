@@ -25,6 +25,8 @@ plugins {
     // Consider updating Kotlin to 2.1+ after validating plugin compatibility.
     id("com.android.application") version "8.9.2" apply false
     id("org.jetbrains.kotlin.android") version "1.9.22" apply false // Match the version used elsewhere
+    // Gradle Play Publisher: upload/publish AABs to Google Play from the CLI.
+    id("com.github.triplet.play") version "3.12.1" apply false
 }
 
 include(":app")

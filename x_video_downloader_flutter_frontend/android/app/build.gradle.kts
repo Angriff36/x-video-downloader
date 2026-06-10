@@ -12,6 +12,7 @@ plugins {
     id("com.android.application")
     id("kotlin-android")
     id("dev.flutter.flutter-gradle-plugin")
+    id("com.github.triplet.play")
 }
 
 android {
@@ -73,6 +74,22 @@ android {
 
 flutter {
     source = "../.."
+}
+
+// Gradle Play Publisher configuration.
+// Requires a Google Play service-account JSON key at android/play-service-account.json
+// (git-ignored). See Play Console -> Setup -> API access to create one.
+// Publish with, e.g.:  ./gradlew publishReleaseBundle      (uploads the signed AAB)
+play {
+    val credsFile = rootProject.file("play-service-account.json")
+    if (credsFile.exists()) {
+        serviceAccountCredentials.set(credsFile)
+    }
+    // Default to the lowest-risk track; override on the CLI with --track production, etc.
+    track.set("internal")
+    defaultToAppBundles.set(true)
+    // Roll out fully once accepted on the chosen track.
+    releaseStatus.set(com.github.triplet.gradle.androidpublisher.ReleaseStatus.COMPLETED)
 }
 
 dependencies {

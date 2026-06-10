@@ -12,3 +12,7 @@ GeneratedPluginRegistrant.java
 key.properties
 **/*.keystore
 **/*.jks
+
+# Google Play service-account key for Gradle Play Publisher — NEVER commit.
+play-service-account.json
+**/play-service-account.json
