@@ -1,5 +1,8 @@
 fastapi==0.115.12
 uvicorn==0.34.0
-yt-dlp @ https://github.com/yt-dlp/yt-dlp/archive/refs/heads/master.tar.gz
 python-multipart
 requests
+# NOTE: yt-dlp is intentionally NOT pinned here. It is installed in its own
+# Docker layer (see Dockerfile) so the nightly deploy can re-pull the latest
+# master each night to keep up with site changes. Adding it back here would
+# let Docker cache a stale copy.

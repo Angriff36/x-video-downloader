@@ -21,6 +21,15 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
+# Install yt-dlp in its OWN layer, last, so it can be refreshed independently.
+# The nightly GitHub Action passes a unique --build-arg YTDLP_REFRESH value,
+# which busts the cache for this single line and pulls the latest master —
+# i.e. the newest site-extractor fixes — without rebuilding ffmpeg/Deno/deps.
+ARG YTDLP_REFRESH=manual
+RUN echo "yt-dlp refresh token: ${YTDLP_REFRESH}" && \
+    pip install --no-cache-dir --upgrade \
+    "yt-dlp @ https://github.com/yt-dlp/yt-dlp/archive/refs/heads/master.tar.gz"
+
 # Copy the rest of your application code (main.py, etc.)
 COPY . .
 
