@@ -5,6 +5,7 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   clipboard_watcher
   connectivity_plus
+  flutter_inappwebview_windows
   flutter_secure_storage_windows
   share_plus
   url_launcher_windows

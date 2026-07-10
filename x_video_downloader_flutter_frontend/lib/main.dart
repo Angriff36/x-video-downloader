@@ -21,6 +21,7 @@ import 'download_scheduler.dart';
 import 'download_schedule_screen.dart';
 import 'auth_service.dart';
 import 'auth_settings_screen.dart';
+import 'x_login_screen.dart';
 import 'network_monitor.dart';
 import 'batch_import_screen.dart';
 import 'theme_provider.dart';
@@ -301,6 +302,7 @@ class _DownloaderScreenState extends State<DownloaderScreen>
     with ClipboardListener {
   final TextEditingController _urlController = TextEditingController();
   String status = "";
+  String? _lastPublishedDownloadUri;
   bool _isProbing = false;
   bool _isDirectDownloading = false;
   double? _directDownloadProgress;
@@ -522,6 +524,7 @@ class _DownloaderScreenState extends State<DownloaderScreen>
             status = apiError.message;
             _isProbing = false;
           });
+          _maybePromptXLogin(apiError, url, chooseQuality: chooseQuality);
           return;
         }
 
@@ -561,6 +564,7 @@ class _DownloaderScreenState extends State<DownloaderScreen>
           status = apiError.message;
           _isProbing = false;
         });
+        _maybePromptXLogin(apiError, url, chooseQuality: chooseQuality);
       }
     } catch (e) {
       final apiError = ApiError.fromException(e);
@@ -568,6 +572,59 @@ class _DownloaderScreenState extends State<DownloaderScreen>
         status = apiError.message;
         _isProbing = false;
       });
+    }
+  }
+
+  /// If an X/Twitter probe fails in a way that logging in could fix and the
+  /// user has no saved X session, offer to log in and retry automatically.
+  Future<void> _maybePromptXLogin(
+    ApiError error,
+    String url, {
+    bool chooseQuality = false,
+  }) async {
+    // Codes X returns for restricted/NSFW/protected posts viewed anonymously.
+    const loginFixable = {
+      'auth_required',
+      'no_formats',
+      'video_unavailable',
+      'private_video',
+    };
+    final platform = DownloadRecord.detectPlatform(url);
+    if (platform != 'X/Twitter') return;
+    if (!loginFixable.contains(error.errorCode)) return;
+    if (await _authService.getValidAccessToken(platform) != null) return;
+    if (!mounted) return;
+
+    final shouldLogin = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('This post may be restricted'),
+        content: const Text(
+          'X hides some posts (age-restricted, sensitive, or from protected '
+          'accounts) unless you are logged in. Log in to X and this download '
+          'will retry automatically.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Not Now'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Log in to X'),
+          ),
+        ],
+      ),
+    );
+    if (shouldLogin != true || !mounted) return;
+
+    final loggedIn = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => XLoginScreen(authService: _authService),
+      ),
+    );
+    if (loggedIn == true && mounted) {
+      _probeUrl(chooseQuality: chooseQuality);
     }
   }
 
@@ -584,8 +641,16 @@ class _DownloaderScreenState extends State<DownloaderScreen>
     final endpoint = "$_backendBaseUrl/formats?url=${Uri.encodeComponent(url)}";
 
     try {
+      // Attach auth like /probe does — without it, restricted posts make
+      // /formats fail and the picker silently falls back to best quality.
+      final headers = <String, String>{};
+      final platform = DownloadRecord.detectPlatform(url);
+      final authToken = await _authService.getValidAccessToken(platform);
+      if (authToken != null) {
+        headers['X-Auth-Token'] = authToken;
+      }
       final response = await http
-          .get(Uri.parse(endpoint))
+          .get(Uri.parse(endpoint), headers: headers)
           .timeout(const Duration(seconds: 30));
 
       if (response.statusCode == 200) {
@@ -925,7 +990,14 @@ class _DownloaderScreenState extends State<DownloaderScreen>
       }
       await sink.close();
 
-      await _publishToDownloads(file.path, displayName, extension);
+      final publishedUri = await _publishToDownloads(
+        file.path,
+        displayName,
+        extension,
+      );
+      if (publishedUri != null) {
+        _lastPublishedDownloadUri = publishedUri;
+      }
 
       await _persistDirectDownloadHistory(
         url: url,
@@ -955,14 +1027,14 @@ class _DownloaderScreenState extends State<DownloaderScreen>
     }
   }
 
-  Future<void> _publishToDownloads(
+  Future<String?> _publishToDownloads(
     String filePath,
     String displayName,
     String extension,
   ) async {
-    if (!Platform.isAndroid) return;
+    if (!Platform.isAndroid) return null;
     final mimeType = extension == 'mp3' ? 'audio/mpeg' : 'video/mp4';
-    await _mediaChannel.invokeMethod('publishToDownloads', {
+    return await _mediaChannel.invokeMethod<String>('publishToDownloads', {
       'path': filePath,
       'displayName': displayName,
       'mimeType': mimeType,
@@ -1029,6 +1101,64 @@ class _DownloaderScreenState extends State<DownloaderScreen>
     final Uri url = Uri.parse('https://buymeacoffee.com/angriff');
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
       throw Exception('Could not launch $url');
+    }
+  }
+
+  Future<void> _openGallery() async {
+    if (!Platform.isAndroid) {
+      setState(() {
+        status = 'Open Gallery is currently supported on Android only';
+      });
+      return;
+    }
+
+    if (_lastPublishedDownloadUri != null) {
+      try {
+        await AndroidIntent(
+          action: 'android.intent.action.VIEW',
+          data: _lastPublishedDownloadUri,
+          type: 'video/*',
+          flags: <int>[Flag.FLAG_ACTIVITY_NEW_TASK, 0x00000001],
+        ).launch();
+        return;
+      } on PlatformException {
+        // Fall through to picker fallback.
+      } catch (_) {
+        // Fall through to picker fallback.
+      }
+    }
+
+    final intents = <AndroidIntent>[
+      AndroidIntent(
+        action: 'android.intent.action.GET_CONTENT',
+        type: 'video/*',
+        flags: <int>[Flag.FLAG_ACTIVITY_NEW_TASK],
+      ),
+      AndroidIntent(
+        action: 'android.intent.action.PICK',
+        data: 'content://media/external/video/media',
+        type: 'video/*',
+        flags: <int>[Flag.FLAG_ACTIVITY_NEW_TASK],
+      ),
+    ];
+
+    for (var i = 0; i < intents.length; i++) {
+      try {
+        await intents[i].launch();
+        return;
+      } on PlatformException {
+        if (i == intents.length - 1) {
+          setState(() {
+            status = 'Could not open gallery on this device';
+          });
+        }
+      } catch (_) {
+        if (i == intents.length - 1) {
+          setState(() {
+            status = 'Could not open gallery on this device';
+          });
+        }
+      }
     }
   }
 
@@ -1216,14 +1346,7 @@ class _DownloaderScreenState extends State<DownloaderScreen>
             ),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () async {
-                final intent = AndroidIntent(
-                  action: 'android.intent.action.VIEW',
-                  data: Uri.encodeFull('content://media/internal/video/media'),
-                  flags: <int>[Flag.FLAG_ACTIVITY_NEW_TASK],
-                );
-                await intent.launch();
-              },
+              onPressed: _openGallery,
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 50,

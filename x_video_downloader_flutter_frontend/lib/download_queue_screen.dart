@@ -682,6 +682,28 @@ class _QueueItemTile extends StatelessWidget {
       );
     }
 
+    if (onCancel != null) {
+      buttons.add(
+        IconButton(
+          icon: const Icon(Icons.close, size: 20),
+          onPressed: onCancel,
+          tooltip: 'Cancel',
+          visualDensity: VisualDensity.compact,
+        ),
+      );
+    }
+
+    if (onRemove != null) {
+      buttons.add(
+        IconButton(
+          icon: const Icon(Icons.delete_outline, size: 20),
+          onPressed: onRemove,
+          tooltip: 'Remove',
+          visualDensity: VisualDensity.compact,
+        ),
+      );
+    }
+
     if (buttons.isEmpty) return null;
     if (buttons.length == 1) return buttons.first;
 
