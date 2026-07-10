@@ -217,6 +217,12 @@ def _classify_error(error: Exception) -> tuple[str, str]:
     error_type = type(error).__name__
 
     # yt-dlp specific patterns
+    # Twitter/X: emitted for text-only tweets AND for restricted/NSFW tweets
+    # viewed without auth — deterministic, so never retry it.
+    if "no video could be found in this tweet" in msg:
+        return ErrorCode.NO_FORMATS, str(error)
+    if "nsfw tweet" in msg:
+        return ErrorCode.AUTH_REQUIRED, str(error)
     if "sign in to confirm" in msg or "bot" in msg:
         return ErrorCode.AUTH_REQUIRED, str(error)
     if "private" in msg and "video" in msg:
