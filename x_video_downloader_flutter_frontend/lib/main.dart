@@ -1025,7 +1025,16 @@ class _DownloaderScreenState extends State<DownloaderScreen>
     String extension,
   ) async {
     if (!Platform.isAndroid) return null;
-    final mimeType = extension == 'mp3' ? 'audio/mpeg' : 'video/mp4';
+    const extToMime = {
+      'mp3': 'audio/mpeg',
+      'm4a': 'audio/mp4',
+      'ogg': 'audio/ogg',
+      'flac': 'audio/flac',
+      'wav': 'audio/wav',
+      'aac': 'audio/aac',
+      'webm': 'video/webm',
+    };
+    final mimeType = extToMime[extension] ?? 'video/mp4';
     return await _mediaChannel.invokeMethod<String>('publishToDownloads', {
       'path': filePath,
       'displayName': displayName,
