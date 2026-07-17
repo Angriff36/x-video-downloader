@@ -1002,12 +1002,19 @@ def _choose_x_http_format(info: dict, requested_format_id: Optional[str]) -> dic
 
 def _stream_remote_media(media_url: str, headers: dict, chunk_size: int = 65536):
     req = urllib.request.Request(media_url, headers=headers)
-    with urllib.request.urlopen(req, timeout=60) as upstream:
+    yield from _stream_upstream(urllib.request.urlopen(req, timeout=60), chunk_size)
+
+
+def _stream_upstream(upstream, chunk_size: int = 65536):
+    """Stream an already-open urllib response, closing it when done."""
+    try:
         while True:
             chunk = upstream.read(chunk_size)
             if not chunk:
                 break
             yield chunk
+    finally:
+        upstream.close()
 
 
 def _stream_from_requests(resp, chunk_size: int = 65536):
@@ -1075,8 +1082,16 @@ def _direct_stream_response(
         'X-Accel-Buffering': 'no',
     }
 
+    # Open the upstream connection here so we can forward its Content-Length —
+    # without it the app can't show download progress.
+    upstream_req = urllib.request.Request(selected['url'], headers=stream_headers)
+    upstream = urllib.request.urlopen(upstream_req, timeout=60)
+    content_length = upstream.headers.get('Content-Length')
+    if content_length:
+        response_headers['Content-Length'] = content_length
+
     return StreamingResponse(
-        _stream_remote_media(selected['url'], stream_headers),
+        _stream_upstream(upstream),
         media_type=media_type,
         headers=response_headers,
     )
