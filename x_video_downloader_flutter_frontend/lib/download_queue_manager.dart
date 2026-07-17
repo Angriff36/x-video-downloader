@@ -414,7 +414,8 @@ class DownloadQueueManager extends ChangeNotifier {
         final downloadDir = await _getDownloadDir();
         // Use a sanitized version of the title for the local filename
         final safeName = _sanitizeLocalFilename(item.title);
-        final ext = _getExtensionForFormat(item.formatId);
+        final ext = _extensionFromContentType(contentType) ??
+            _getExtensionForFormat(item.formatId);
         final filePath =
             "$downloadDir/${safeName}_${DateTime.now().millisecondsSinceEpoch}${item.videoIndex != null ? '_${item.videoIndex}' : ''}.$ext";
         final file = File(filePath);
@@ -662,7 +663,16 @@ class DownloadQueueManager extends ChangeNotifier {
   ) async {
     if (!Platform.isAndroid) return;
 
-    final mimeType = extension == 'mp3' ? 'audio/mpeg' : 'video/mp4';
+    const extToMime = {
+      'mp3': 'audio/mpeg',
+      'm4a': 'audio/mp4',
+      'ogg': 'audio/ogg',
+      'flac': 'audio/flac',
+      'wav': 'audio/wav',
+      'aac': 'audio/aac',
+      'webm': 'video/webm',
+    };
+    final mimeType = extToMime[extension] ?? 'video/mp4';
     try {
       await _mediaChannel.invokeMethod('publishToDownloads', {
         'path': filePath,
@@ -697,6 +707,25 @@ class DownloadQueueManager extends ChangeNotifier {
       safe = safe.substring(0, 80);
     }
     return safe.isEmpty ? 'video' : safe;
+  }
+
+  /// Map a response Content-Type to a file extension, or null if unknown.
+  String? _extensionFromContentType(String? contentType) {
+    if (contentType == null) return null;
+    const typeToExt = {
+      'audio/mpeg': 'mp3',
+      'audio/mp4': 'm4a',
+      'audio/ogg': 'ogg',
+      'audio/flac': 'flac',
+      'audio/wav': 'wav',
+      'audio/aac': 'aac',
+      'video/webm': 'webm',
+      'video/mp4': 'mp4',
+    };
+    for (final entry in typeToExt.entries) {
+      if (contentType.contains(entry.key)) return entry.value;
+    }
+    return null;
   }
 
   /// Get the file extension for a given format ID.

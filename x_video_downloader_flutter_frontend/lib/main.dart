@@ -1050,6 +1050,11 @@ class _DownloaderScreenState extends State<DownloaderScreen>
 
   String _extensionFromContentType(String? contentType) {
     final lower = contentType?.toLowerCase() ?? '';
+    if (lower.contains('audio/mp4')) return 'm4a';
+    if (lower.contains('audio/ogg')) return 'ogg';
+    if (lower.contains('audio/flac')) return 'flac';
+    if (lower.contains('audio/wav')) return 'wav';
+    if (lower.contains('audio/aac')) return 'aac';
     if (lower.contains('audio')) return 'mp3';
     if (lower.contains('webm')) return 'webm';
     return 'mp4';

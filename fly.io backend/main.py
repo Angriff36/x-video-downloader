@@ -881,6 +881,17 @@ def _write_twitter_cookiefile(cookies: dict) -> str | None:
         return None
 
 
+def _url_host(url: str) -> str:
+    return (urllib.parse.urlsplit(url).hostname or '').lower()
+
+
+def _host_matches(host: str, *domains: str) -> bool:
+    """True if host IS one of the domains or a real subdomain of one.
+    Substring checks are not safe here: 'instagram.com.evil.test' must not
+    match, or session cookies would be sent to an attacker's host."""
+    return any(host == d or host.endswith('.' + d) for d in domains)
+
+
 def _apply_auth_to_opts(ydl_opts: dict, request: Request, url: str) -> dict:
     """Apply authentication from request headers to yt-dlp options.
 
@@ -896,7 +907,12 @@ def _apply_auth_to_opts(ydl_opts: dict, request: Request, url: str) -> dict:
     if not auth_token:
         return ydl_opts
 
-    # Add bearer token to headers for platforms that support it
+    host = _url_host(url)
+    # Only attach credentials for exactly-verified platform hosts — never as a
+    # blanket header, or the token leaks to every non-platform site.
+    if not _host_matches(host, 'x.com', 'twitter.com', 'instagram.com'):
+        return ydl_opts
+
     headers = ydl_opts.get('http_headers', {})
     headers['Authorization'] = f'Bearer {auth_token}'
     ydl_opts['http_headers'] = headers
@@ -905,7 +921,7 @@ def _apply_auth_to_opts(ydl_opts: dict, request: Request, url: str) -> dict:
     # For Twitter/X, the captured session is "auth_token=..; ct0=.." (WebView login).
     # yt-dlp's Twitter extractor reads auth_token + ct0 from its cookiejar, so we
     # must hand it a real cookiefile — http headers alone are not enough.
-    if "x.com" in url or "twitter.com" in url:
+    if _host_matches(host, 'x.com', 'twitter.com'):
         cookies = _parse_cookie_string(auth_token)
         if 'auth_token' not in cookies:
             cookies['auth_token'] = auth_token  # legacy: bare token
@@ -918,7 +934,7 @@ def _apply_auth_to_opts(ydl_opts: dict, request: Request, url: str) -> dict:
         )
         if cookies.get('ct0'):
             ydl_opts['http_headers']['x-csrf-token'] = cookies['ct0']
-    elif "instagram.com" in url:
+    elif _host_matches(host, 'instagram.com'):
         # Instagram requires multiple cookies for proper authentication
         # sessionid is the primary auth cookie
         ydl_opts['http_headers']['Cookie'] = f'sessionid={auth_token}'
@@ -930,6 +946,19 @@ def _apply_auth_to_opts(ydl_opts: dict, request: Request, url: str) -> dict:
     # TikTok needs no auth — it is served via the TikWM API, not yt-dlp.
 
     return ydl_opts
+
+
+def _media_type_for_ext(ext: str) -> str:
+    return {
+        'mp3': 'audio/mpeg',
+        'm4a': 'audio/mp4',
+        'ogg': 'audio/ogg',
+        'opus': 'audio/ogg',
+        'flac': 'audio/flac',
+        'wav': 'audio/wav',
+        'aac': 'audio/aac',
+        'webm': 'video/webm',
+    }.get(ext, 'video/mp4')
 
 
 def _build_content_disposition(filename: str) -> str:
@@ -979,6 +1008,13 @@ def _choose_direct_format(info: dict, requested_format_id: Optional[str]) -> dic
             and f.get('acodec') != 'none'
             and '.m3u8' not in f['url']
         ]
+        if requested_format_id:
+            for f in audio:
+                if f.get('format_id') == requested_format_id:
+                    return f
+            # Requested format isn't directly streamable — honor it via the
+            # exact-format merge path instead of silently substituting.
+            return None
         if audio:
             return max(audio, key=lambda f: f.get('abr') or f.get('tbr') or 0)
         return None  # HLS-only audio: let the merge path handle it
@@ -1055,8 +1091,7 @@ def _direct_stream_response(
     format_id: Optional[str],
     filename_template: Optional[str],
 ) -> StreamingResponse | None:
-    host = (urllib.parse.urlsplit(url).hostname or '').lower()
-    is_x = host in ('x.com', 'twitter.com') or host.endswith(('.x.com', '.twitter.com'))
+    is_x = _host_matches(_url_host(url), 'x.com', 'twitter.com')
 
     template = filename_template or DEFAULT_FILENAME_TEMPLATE
     ydl_opts = {
@@ -1092,12 +1127,7 @@ def _direct_stream_response(
         return None
 
     ext = selected.get('ext') or info.get('ext') or 'mp4'
-    media_type = {
-        'mp3': 'audio/mpeg',
-        'm4a': 'audio/mp4',
-        'ogg': 'audio/ogg',
-        'opus': 'audio/ogg',
-    }.get(ext, 'video/mp4')
+    media_type = _media_type_for_ext(ext)
     base_name = _resolve_filename_template(template, info, url, format_id=format_id, ext=ext)
     filename = f"{base_name}.{ext}"
 
@@ -1780,7 +1810,7 @@ def _download_with_retry(
             if os.path.exists(embedded_output):
                 os.remove(embedded_output)
 
-    media_type = 'audio/mpeg' if ext == 'mp3' else 'video/mp4'
+    media_type = _media_type_for_ext(ext)
     return FileResponse(
         path=output_path,
         media_type=media_type,
@@ -1946,7 +1976,7 @@ def _download_index_with_retry(
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         ydl.download([url])
 
-    media_type = 'audio/mpeg' if ext == 'mp3' else 'video/mp4'
+    media_type = _media_type_for_ext(ext)
     return FileResponse(
         path=output_path,
         media_type=media_type,

@@ -54,17 +54,15 @@ class DownloadRecord {
     };
   }
 
-  /// Ordered domain-substring → platform label pairs.
-  /// Order matters: keep more specific entries before generic ones
-  /// (e.g. 'vm.tiktok' vs 'x.com' substring quirks).
+  /// Domain → platform label pairs, matched against the parsed hostname
+  /// (exact or true subdomain — never substring, so 'x.com.evil.test'
+  /// cannot masquerade as X and trigger auth attachment).
   static const List<MapEntry<String, String>> _platformDomains = [
     MapEntry('youtube.com', 'YouTube'),
     MapEntry('youtu.be', 'YouTube'),
     MapEntry('instagram.com', 'Instagram'),
     MapEntry('tiktok.com', 'TikTok'),
-    MapEntry('vm.tiktok', 'TikTok'),
     MapEntry('douyin.com', 'Douyin'),
-    // Before x.com: 'xnxx.com' contains the substring 'x.com'.
     MapEntry('xnxx.com', 'XNXX'),
     MapEntry('twitter.com', 'X/Twitter'),
     MapEntry('x.com', 'X/Twitter'),
@@ -109,11 +107,14 @@ class DownloadRecord {
     MapEntry('bandcamp.com', 'Bandcamp'),
   ];
 
-  /// Detect platform from URL.
+  /// Detect platform from URL by parsed hostname.
   static String detectPlatform(String url) {
-    final lower = url.toLowerCase();
+    final host = Uri.tryParse(url.trim())?.host.toLowerCase() ?? '';
+    if (host.isEmpty) return 'Other';
     for (final entry in _platformDomains) {
-      if (lower.contains(entry.key)) return entry.value;
+      if (host == entry.key || host.endsWith('.${entry.key}')) {
+        return entry.value;
+      }
     }
     return 'Other';
   }

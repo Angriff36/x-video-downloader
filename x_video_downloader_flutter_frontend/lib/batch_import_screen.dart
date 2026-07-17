@@ -42,12 +42,19 @@ _BatchValidationResult _validateUrls(List<String> rawLines) {
     if (trimmed.isEmpty) continue;
 
     // Try to match a known video URL inside the line; otherwise accept any
-    // http(s) URL — the backend hands everything to yt-dlp (1800+ sites).
-    final match = videoUrlPattern.firstMatch(trimmed);
-    final url = match?.group(0) ??
-        ((trimmed.startsWith('http://') || trimmed.startsWith('https://'))
-            ? trimmed
-            : null);
+    // well-formed http(s) URL — the backend hands everything to yt-dlp
+    // (1800+ sites). Take only the first token so trailing text on the
+    // line doesn't get queued as part of the URL.
+    String? url = videoUrlPattern.firstMatch(trimmed)?.group(0);
+    if (url == null) {
+      final token = trimmed.split(RegExp(r'\s+')).first;
+      final uri = Uri.tryParse(token);
+      if (uri != null &&
+          (uri.scheme == 'http' || uri.scheme == 'https') &&
+          uri.host.isNotEmpty) {
+        url = token;
+      }
+    }
     if (url != null) {
       if (seen.contains(url)) continue; // dedupe
       seen.add(url);
