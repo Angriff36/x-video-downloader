@@ -54,23 +54,66 @@ class DownloadRecord {
     };
   }
 
+  /// Ordered domain-substring → platform label pairs.
+  /// Order matters: keep more specific entries before generic ones
+  /// (e.g. 'vm.tiktok' vs 'x.com' substring quirks).
+  static const List<MapEntry<String, String>> _platformDomains = [
+    MapEntry('youtube.com', 'YouTube'),
+    MapEntry('youtu.be', 'YouTube'),
+    MapEntry('instagram.com', 'Instagram'),
+    MapEntry('tiktok.com', 'TikTok'),
+    MapEntry('vm.tiktok', 'TikTok'),
+    MapEntry('douyin.com', 'Douyin'),
+    // Before x.com: 'xnxx.com' contains the substring 'x.com'.
+    MapEntry('xnxx.com', 'XNXX'),
+    MapEntry('twitter.com', 'X/Twitter'),
+    MapEntry('x.com', 'X/Twitter'),
+    MapEntry('vimeo.com', 'Vimeo'),
+    MapEntry('dailymotion.com', 'Dailymotion'),
+    MapEntry('facebook.com', 'Facebook'),
+    MapEntry('fb.watch', 'Facebook'),
+    MapEntry('reddit.com', 'Reddit'),
+    MapEntry('redd.it', 'Reddit'),
+    MapEntry('espn.com', 'ESPN'),
+    MapEntry('pinterest.com', 'Pinterest'),
+    MapEntry('pin.it', 'Pinterest'),
+    MapEntry('imdb.com', 'IMDb'),
+    MapEntry('imgur.com', 'Imgur'),
+    MapEntry('snapchat.com', 'Snapchat'),
+    MapEntry('likee.video', 'Likee'),
+    MapEntry('linkedin.com', 'LinkedIn'),
+    MapEntry('tumblr.com', 'Tumblr'),
+    MapEntry('t.me', 'Telegram'),
+    MapEntry('bitchute.com', 'BitChute'),
+    MapEntry('9gag.com', '9GAG'),
+    MapEntry('ok.ru', 'OK.ru'),
+    MapEntry('rumble.com', 'Rumble'),
+    MapEntry('streamable.com', 'Streamable'),
+    MapEntry('ted.com', 'TED'),
+    MapEntry('sohu.com', 'Sohu'),
+    MapEntry('xvideos.com', 'XVideos'),
+    MapEntry('xiaohongshu.com', 'Xiaohongshu'),
+    MapEntry('xhslink.com', 'Xiaohongshu'),
+    MapEntry('ixigua.com', 'Ixigua'),
+    MapEntry('weibo.com', 'Weibo'),
+    MapEntry('weibo.cn', 'Weibo'),
+    MapEntry('meipai.com', 'Meipai'),
+    MapEntry('sina.com.cn', 'Sina'),
+    MapEntry('vk.com', 'VK'),
+    MapEntry('vkvideo.ru', 'VK'),
+    MapEntry('bilibili.com', 'Bilibili'),
+    MapEntry('b23.tv', 'Bilibili'),
+    MapEntry('soundcloud.com', 'SoundCloud'),
+    MapEntry('mixcloud.com', 'Mixcloud'),
+    MapEntry('zingmp3.vn', 'Zing MP3'),
+    MapEntry('bandcamp.com', 'Bandcamp'),
+  ];
+
   /// Detect platform from URL.
   static String detectPlatform(String url) {
     final lower = url.toLowerCase();
-    if (lower.contains('youtube.com') || lower.contains('youtu.be')) {
-      return 'YouTube';
-    } else if (lower.contains('instagram.com')) {
-      return 'Instagram';
-    } else if (lower.contains('tiktok.com') || lower.contains('vm.tiktok')) {
-      return 'TikTok';
-    } else if (lower.contains('twitter.com') || lower.contains('x.com')) {
-      return 'X/Twitter';
-    } else if (lower.contains('vimeo.com')) {
-      return 'Vimeo';
-    } else if (lower.contains('dailymotion.com')) {
-      return 'Dailymotion';
-    } else if (lower.contains('facebook.com') || lower.contains('fb.watch')) {
-      return 'Facebook';
+    for (final entry in _platformDomains) {
+      if (lower.contains(entry.key)) return entry.value;
     }
     return 'Other';
   }

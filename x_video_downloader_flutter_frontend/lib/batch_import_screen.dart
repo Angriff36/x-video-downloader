@@ -7,20 +7,7 @@ import 'download_record.dart';
 import 'download_queue_manager.dart';
 import 'queue_item.dart';
 
-/// Regex to detect supported video platform URLs (duplicated from main.dart to avoid coupling).
-final _batchUrlPattern = RegExp(
-  r'(https?://(?:'
-  r'(?:www\.)?(?:x\.com|twitter\.com)/\w+/status/\d+'
-  r'|(?:www\.)?(?:youtube\.com/(?:watch\?v=|shorts/|embed/)|youtu\.be/)'
-  r'|(?:www\.)?(?:instagram\.com/(?:reel|p|tv)/)'
-  r'|(?:www\.)?(?:tiktok\.com/@[^/]+/video/)'
-  r'|(?:www\.)?(?:facebook\.com/(?:watch|reel|videos/))'
-  r'|(?:www\.)?(?:vimeo\.com/\d+)'
-  r'|(?:www\.)?(?:reddit\.com/r/[^/]+/comments/)'
-  r'|(?:www\.)?(?:dailymotion\.com/video/)'
-  r')[^\s<>"{}|\\^`\[\]]*)',
-  caseSensitive: false,
-);
+import 'video_url_patterns.dart';
 
 /// Result of validating a batch of URLs.
 class _BatchValidationResult {
@@ -54,25 +41,20 @@ _BatchValidationResult _validateUrls(List<String> rawLines) {
     final trimmed = line.trim();
     if (trimmed.isEmpty) continue;
 
-    // Try to match as a video URL
-    final match = _batchUrlPattern.firstMatch(trimmed);
-    if (match != null) {
-      final url = match.group(0)!;
+    // Try to match a known video URL inside the line; otherwise accept any
+    // http(s) URL — the backend hands everything to yt-dlp (1800+ sites).
+    final match = videoUrlPattern.firstMatch(trimmed);
+    final url = match?.group(0) ??
+        ((trimmed.startsWith('http://') || trimmed.startsWith('https://'))
+            ? trimmed
+            : null);
+    if (url != null) {
       if (seen.contains(url)) continue; // dedupe
       seen.add(url);
       valid.add(_ValidatedUrl(
         url: url,
         platform: DownloadRecord.detectPlatform(url),
       ));
-    } else if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
-      // It's a URL but not a supported platform
-      if (!seen.contains(trimmed)) {
-        seen.add(trimmed);
-        invalid.add(_InvalidUrl(
-          input: trimmed,
-          reason: 'Unsupported platform',
-        ));
-      }
     } else {
       invalid.add(_InvalidUrl(
         input: trimmed.length > 80 ? '${trimmed.substring(0, 80)}...' : trimmed,

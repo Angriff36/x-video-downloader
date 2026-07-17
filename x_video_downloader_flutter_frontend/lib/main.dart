@@ -32,26 +32,12 @@ import 'filename_template_settings_screen.dart';
 import 'download_analytics_screen.dart';
 import 'storage_management_screen.dart';
 import 'storage_service.dart';
+import 'video_url_patterns.dart';
 import 'dart:async';
-
-/// Regex to detect supported video platform URLs in clipboard text.
-final _videoUrlPattern = RegExp(
-  r'(https?://(?:'
-  r'(?:www\.)?(?:x\.com|twitter\.com)/\w+/status/\d+' // X/Twitter
-  r'|(?:www\.)?(?:youtube\.com/(?:watch\?v=|shorts/|embed/)|youtu\.be/)' // YouTube
-  r'|(?:www\.)?(?:instagram\.com/(?:reel|p|tv)/)' // Instagram
-  r'|(?:www\.)?(?:tiktok\.com/@[^/]+/video/)' // TikTok
-  r'|(?:www\.)?(?:facebook\.com/(?:watch|reel|videos/))' // Facebook
-  r'|(?:www\.)?(?:vimeo\.com/\d+)' // Vimeo
-  r'|(?:www\.)?(?:reddit\.com/r/[^/]+/comments/)' // Reddit
-  r'|(?:www\.)?(?:dailymotion\.com/video/)' // Dailymotion
-  r')[^\s<>"{}|\\^`\[\]]*)',
-  caseSensitive: false,
-);
 
 /// Extracts the first video URL from text, or returns null.
 String? _extractVideoUrl(String text) {
-  final match = _videoUrlPattern.firstMatch(text);
+  final match = videoUrlPattern.firstMatch(text);
   return match?.group(0);
 }
 
@@ -443,7 +429,7 @@ class _DownloaderScreenState extends State<DownloaderScreen>
   /// Handle text shared from another app, detecting single or multiple URLs.
   void _handleSharedText(String text) {
     final urls =
-        _videoUrlPattern.allMatches(text).map((m) => m.group(0)!).toList();
+        videoUrlPattern.allMatches(text).map((m) => m.group(0)!).toList();
 
     if (urls.isEmpty) {
       // Not a recognized video URL — set as-is

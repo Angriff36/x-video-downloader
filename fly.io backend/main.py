@@ -969,12 +969,29 @@ def _choose_direct_format(info: dict, requested_format_id: Optional[str]) -> dic
         )
         return progressive[0]
 
+    # Audio-only source (SoundCloud, Bandcamp, ...): no format has video at
+    # all, so stream the best plain-http audio format directly.
+    if formats and all(f.get('vcodec') in (None, 'none') for f in formats):
+        audio = [
+            f for f in formats
+            if f.get('url')
+            and f.get('protocol') in ('http', 'https')
+            and f.get('acodec') != 'none'
+            and '.m3u8' not in f['url']
+        ]
+        if audio:
+            return max(audio, key=lambda f: f.get('abr') or f.get('tbr') or 0)
+        return None  # HLS-only audio: let the merge path handle it
+
     if requested_format_id:
         for item in formats:
             if item.get('format_id') == requested_format_id and item.get('url'):
                 return item
 
-    return info if info.get('url') else None
+    top_url = info.get('url')
+    if top_url and info.get('protocol') in (None, 'http', 'https') and '.m3u8' not in top_url:
+        return info
+    return None
 
 
 def _choose_x_http_format(info: dict, requested_format_id: Optional[str]) -> dict | None:
@@ -1046,7 +1063,7 @@ def _direct_stream_response(
         'quiet': True,
         'no_warnings': True,
         'skip_download': True,
-        'format': format_id or 'best[ext=mp4][vcodec!=none][acodec!=none]/best[vcodec!=none][acodec!=none]/best',
+        'format': format_id or 'best[ext=mp4][vcodec!=none][acodec!=none]/best[vcodec!=none][acodec!=none]/best/bestaudio',
         'http_headers': _get_headers(url),
         'socket_timeout': 30,
         'noplaylist': True,
@@ -1075,7 +1092,12 @@ def _direct_stream_response(
         return None
 
     ext = selected.get('ext') or info.get('ext') or 'mp4'
-    media_type = 'audio/mpeg' if ext == 'mp3' else 'video/mp4'
+    media_type = {
+        'mp3': 'audio/mpeg',
+        'm4a': 'audio/mp4',
+        'ogg': 'audio/ogg',
+        'opus': 'audio/ogg',
+    }.get(ext, 'video/mp4')
     base_name = _resolve_filename_template(template, info, url, format_id=format_id, ext=ext)
     filename = f"{base_name}.{ext}"
 
@@ -1580,6 +1602,19 @@ def _download_with_retry(
             info = ydl.extract_info(url, download=False)
     except Exception:
         pass  # Non-fatal: fallback to default filename
+
+    # Audio-only source (SoundCloud, Bandcamp, Mixcloud, ...): there is no
+    # video to merge, so 'bestvideo+bestaudio/best' would fail. Download the
+    # best audio as m4a instead.
+    if (
+        not format_id
+        and info
+        and info.get('formats')
+        and all(f.get('vcodec') in (None, 'none') for f in info['formats'])
+    ):
+        ext = 'm4a'
+        fmt_string = 'bestaudio/best'
+        merge_format = 'm4a'
 
     # Resolve filename from template
     if info:
