@@ -421,6 +421,7 @@ class DownloadQueueManager extends ChangeNotifier {
         final sink = file.openWrite();
         var lastProgressUpdate = DateTime.now();
 
+        var streamCompleted = false;
         try {
           await for (final chunk in response.stream) {
             if (activeDownload.cancelled) {
@@ -441,8 +442,15 @@ class DownloadQueueManager extends ChangeNotifier {
               _updateProgress(id, receivedBytes / contentLength, receivedBytes);
             }
           }
+          streamCompleted = true;
         } finally {
           await sink.close();
+          if (!streamCompleted) {
+            // Cancelled or errored mid-stream: don't leave a partial file.
+            try {
+              await file.delete();
+            } catch (_) {}
+          }
         }
         await _publishToDownloads(filePath, file.uri.pathSegments.last, ext);
 
