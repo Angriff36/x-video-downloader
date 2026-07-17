@@ -442,11 +442,16 @@ class DownloadQueueManager extends ChangeNotifier {
               _updateProgress(id, receivedBytes / contentLength, receivedBytes);
             }
           }
+          // Only a successfully flushed+closed sink counts as complete.
+          await sink.close();
           streamCompleted = true;
         } finally {
-          await sink.close();
           if (!streamCompleted) {
-            // Cancelled or errored mid-stream: don't leave a partial file.
+            // Cancelled, errored mid-stream, or close failed:
+            // don't leave a partial file behind.
+            try {
+              await sink.close();
+            } catch (_) {}
             try {
               await file.delete();
             } catch (_) {}

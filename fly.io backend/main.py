@@ -997,7 +997,12 @@ def _choose_x_http_format(info: dict, requested_format_id: Optional[str]) -> dic
         return None
     if formats:
         return max(formats, key=lambda f: f.get('tbr') or 0)
-    return info if info.get('url') else None
+    # Single-format posts (e.g. GIF tweets) have no formats list, just a top-level
+    # url — but only stream it if it's a plain http(s) file, never an HLS manifest.
+    top_url = info.get('url')
+    if top_url and info.get('protocol') in (None, 'http', 'https') and '.m3u8' not in top_url:
+        return info
+    return None
 
 
 def _stream_remote_media(media_url: str, headers: dict, chunk_size: int = 65536):
@@ -1033,8 +1038,8 @@ def _direct_stream_response(
     format_id: Optional[str],
     filename_template: Optional[str],
 ) -> StreamingResponse | None:
-    lower_url = url.lower()
-    is_x = "x.com" in lower_url or "twitter.com" in lower_url
+    host = (urllib.parse.urlsplit(url).hostname or '').lower()
+    is_x = host in ('x.com', 'twitter.com') or host.endswith(('.x.com', '.twitter.com'))
 
     template = filename_template or DEFAULT_FILENAME_TEMPLATE
     ydl_opts = {
