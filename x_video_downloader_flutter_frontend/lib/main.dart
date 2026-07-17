@@ -976,11 +976,17 @@ class _DownloaderScreenState extends State<DownloaderScreen>
       final sink = file.openWrite();
       final expectedBytes = response.contentLength;
       var receivedBytes = 0;
+      var lastProgressUpdate = DateTime.now();
 
       await for (final chunk in response.stream) {
         sink.add(chunk);
         receivedBytes += chunk.length;
-        if (expectedBytes != null && expectedBytes > 0 && mounted) {
+        final now = DateTime.now();
+        if (expectedBytes != null &&
+            expectedBytes > 0 &&
+            mounted &&
+            now.difference(lastProgressUpdate).inMilliseconds >= 250) {
+          lastProgressUpdate = now;
           setState(() {
             _directDownloadProgress = receivedBytes / expectedBytes;
             status =

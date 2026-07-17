@@ -410,7 +410,6 @@ class DownloadQueueManager extends ChangeNotifier {
 
         final contentLength = response.contentLength;
         int receivedBytes = 0;
-        List<int> bytes = [];
 
         final downloadDir = await _getDownloadDir();
         // Use a sanitized version of the title for the local filename
@@ -419,23 +418,32 @@ class DownloadQueueManager extends ChangeNotifier {
         final filePath =
             "$downloadDir/${safeName}_${DateTime.now().millisecondsSinceEpoch}${item.videoIndex != null ? '_${item.videoIndex}' : ''}.$ext";
         final file = File(filePath);
+        final sink = file.openWrite();
+        var lastProgressUpdate = DateTime.now();
 
-        await for (final chunk in response.stream) {
-          if (activeDownload.cancelled) {
-            client.close();
-            return;
+        try {
+          await for (final chunk in response.stream) {
+            if (activeDownload.cancelled) {
+              client.close();
+              return;
+            }
+
+            sink.add(chunk);
+            receivedBytes += chunk.length;
+
+            // Throttle UI updates: notifyListeners on every 64KB chunk
+            // rebuilds the whole queue screen and tanks throughput.
+            final now = DateTime.now();
+            if (contentLength != null &&
+                contentLength > 0 &&
+                now.difference(lastProgressUpdate).inMilliseconds >= 250) {
+              lastProgressUpdate = now;
+              _updateProgress(id, receivedBytes / contentLength, receivedBytes);
+            }
           }
-
-          bytes.addAll(chunk);
-          receivedBytes += chunk.length;
-
-          if (contentLength != null && contentLength > 0) {
-            final progress = receivedBytes / contentLength;
-            _updateProgress(id, progress, receivedBytes);
-          }
+        } finally {
+          await sink.close();
         }
-
-        await file.writeAsBytes(bytes);
         await _publishToDownloads(filePath, file.uri.pathSegments.last, ext);
 
         // Download sidecar subtitles if requested
