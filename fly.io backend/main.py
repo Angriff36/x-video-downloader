@@ -850,34 +850,37 @@ def _parse_cookie_string(raw: str) -> dict:
     return cookies
 
 
-def _write_twitter_cookiefile(cookies: dict) -> str | None:
-    """Write X/Twitter auth cookies to a Netscape cookie file for yt-dlp.
+def _write_platform_cookiefile(domain: str, cookies: dict, required: str) -> str | None:
+    """Write platform auth cookies to a Netscape cookie file for yt-dlp.
 
-    yt-dlp's Twitter extractor reads auth_token + ct0 from its cookiejar
-    (via _get_cookies), NOT from http_headers, so a real cookiefile is required.
-    Cookies are scoped to .x.com so they also apply to api.x.com.
+    yt-dlp extractors read session cookies from their cookiejar (via
+    _get_cookies), NOT from http_headers, so a real cookiefile is required.
+    A cookiejar is also domain-scoped, so credentials never travel to
+    redirects or media hosts outside the platform, unlike raw Cookie headers.
     The file is keyed by a hash of the cookie values so each distinct session
     reuses one file instead of accumulating temp files.
     """
-    if not cookies.get('auth_token'):
+    if not cookies.get(required):
         return None
     try:
         digest = hashlib.sha256(
             '|'.join(f'{k}={v}' for k, v in sorted(cookies.items())).encode()
         ).hexdigest()[:16]
-        path = os.path.join(tempfile.gettempdir(), f'xcookies_{digest}.txt')
+        path = os.path.join(
+            tempfile.gettempdir(), f'cookies_{domain.strip(".")}_{digest}.txt'
+        )
         if not os.path.exists(path):
             lines = ['# Netscape HTTP Cookie File', '']
             for name, value in cookies.items():
                 if not value:
                     continue
                 # domain  include_subdomains  path  secure  expiry  name  value
-                lines.append(f'.x.com\tTRUE\t/\tTRUE\t2147483647\t{name}\t{value}')
+                lines.append(f'{domain}\tTRUE\t/\tTRUE\t2147483647\t{name}\t{value}')
             with open(path, 'w', encoding='utf-8') as fh:
                 fh.write('\n'.join(lines) + '\n')
         return path
     except Exception as e:
-        logger.warning(f"[X] Failed to write cookie file: {e}")
+        logger.warning(f"[{domain}] Failed to write cookie file: {e}")
         return None
 
 
@@ -913,31 +916,32 @@ def _apply_auth_to_opts(ydl_opts: dict, request: Request, url: str) -> dict:
     if not _host_matches(host, 'x.com', 'twitter.com', 'instagram.com'):
         return ydl_opts
 
-    headers = ydl_opts.get('http_headers', {})
-    headers['Authorization'] = f'Bearer {auth_token}'
-    ydl_opts['http_headers'] = headers
-
-    # Platform-specific cookie injection
+    # Platform-specific cookie injection — always via a domain-scoped
+    # cookiejar (never global http_headers), so credentials cannot travel
+    # to redirects or media hosts outside the platform.
     # For Twitter/X, the captured session is "auth_token=..; ct0=.." (WebView login).
-    # yt-dlp's Twitter extractor reads auth_token + ct0 from its cookiejar, so we
-    # must hand it a real cookiefile — http headers alone are not enough.
+    # yt-dlp's Twitter extractor reads auth_token + ct0 from its cookiejar.
     if _host_matches(host, 'x.com', 'twitter.com'):
         cookies = _parse_cookie_string(auth_token)
         if 'auth_token' not in cookies:
             cookies['auth_token'] = auth_token  # legacy: bare token
-        cookiefile = _write_twitter_cookiefile(cookies)
+        cookiefile = _write_platform_cookiefile('.x.com', cookies, 'auth_token')
         if cookiefile:
             ydl_opts['cookiefile'] = cookiefile
-        # Backup for the direct-stream (non-yt-dlp) path
+        # Backup for the direct-stream (non-yt-dlp) path; stripped before any
+        # fetch whose host is not a platform/CDN domain.
         ydl_opts['http_headers']['Cookie'] = '; '.join(
             f'{k}={v}' for k, v in cookies.items() if v
         )
         if cookies.get('ct0'):
             ydl_opts['http_headers']['x-csrf-token'] = cookies['ct0']
     elif _host_matches(host, 'instagram.com'):
-        # Instagram requires multiple cookies for proper authentication
         # sessionid is the primary auth cookie
-        ydl_opts['http_headers']['Cookie'] = f'sessionid={auth_token}'
+        cookiefile = _write_platform_cookiefile(
+            '.instagram.com', {'sessionid': auth_token}, 'sessionid'
+        )
+        if cookiefile:
+            ydl_opts['cookiefile'] = cookiefile
         # Add Instagram-specific extractor options when auth is present
         ydl_opts['extractor_args'] = ydl_opts.get('extractor_args', {})
         ydl_opts['extractor_args']['instagram'] = [
@@ -1128,11 +1132,24 @@ def _direct_stream_response(
 
     ext = selected.get('ext') or info.get('ext') or 'mp4'
     media_type = _media_type_for_ext(ext)
+    # Audio-only formats can still use mp4/webm containers.
+    if selected.get('vcodec') == 'none' and not media_type.startswith('audio/'):
+        media_type = 'audio/webm' if ext == 'webm' else 'audio/mp4'
     base_name = _resolve_filename_template(template, info, url, format_id=format_id, ext=ext)
     filename = f"{base_name}.{ext}"
 
     stream_headers = dict(_get_headers(url))
     stream_headers.update(selected.get('http_headers') or {})
+    # Session credentials only travel to platform-affiliated hosts, never to
+    # whatever host a format URL (or redirect) happens to point at.
+    media_host = _url_host(selected['url'])
+    if not _host_matches(
+        media_host,
+        'x.com', 'twitter.com', 'twimg.com',
+        'instagram.com', 'cdninstagram.com', 'fbcdn.net',
+    ):
+        for sensitive in ('Cookie', 'cookie', 'Authorization', 'x-csrf-token'):
+            stream_headers.pop(sensitive, None)
 
     response_headers = {
         'Content-Disposition': _build_content_disposition(filename),
