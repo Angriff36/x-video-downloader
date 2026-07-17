@@ -977,6 +977,29 @@ def _choose_direct_format(info: dict, requested_format_id: Optional[str]) -> dic
     return info if info.get('url') else None
 
 
+def _choose_x_http_format(info: dict, requested_format_id: Optional[str]) -> dict | None:
+    """X's http-* formats are progressive muxed mp4s; codecs are unreported (None),
+    so the generic chooser rejects them. Pick the best https mp4 directly."""
+    formats = [
+        f for f in (info.get('formats') or [])
+        if f.get('url')
+        and f.get('protocol') in ('http', 'https')
+        and f.get('ext') == 'mp4'
+        and f.get('vcodec') != 'none'
+        and f.get('acodec') != 'none'
+    ]
+    if requested_format_id:
+        for f in formats:
+            if f.get('format_id') == requested_format_id:
+                return f
+        # Requested format isn't a progressive http one (e.g. an hls-* id):
+        # honor the exact quality via the server-side merge path instead.
+        return None
+    if formats:
+        return max(formats, key=lambda f: f.get('tbr') or 0)
+    return info if info.get('url') else None
+
+
 def _stream_remote_media(media_url: str, headers: dict, chunk_size: int = 65536):
     req = urllib.request.Request(media_url, headers=headers)
     with urllib.request.urlopen(req, timeout=60) as upstream:
@@ -1004,8 +1027,7 @@ def _direct_stream_response(
     filename_template: Optional[str],
 ) -> StreamingResponse | None:
     lower_url = url.lower()
-    if "x.com" in lower_url or "twitter.com" in lower_url:
-        return None
+    is_x = "x.com" in lower_url or "twitter.com" in lower_url
 
     template = filename_template or DEFAULT_FILENAME_TEMPLATE
     ydl_opts = {
@@ -1033,7 +1055,10 @@ def _direct_stream_response(
     if not info:
         return None
 
-    selected = _choose_direct_format(info, format_id)
+    if is_x:
+        selected = _choose_x_http_format(info, format_id)
+    else:
+        selected = _choose_direct_format(info, format_id)
     if not selected or not selected.get('url'):
         return None
 
