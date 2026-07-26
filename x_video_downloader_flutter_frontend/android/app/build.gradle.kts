@@ -17,7 +17,7 @@ plugins {
 
 android {
     namespace = "com.angriff.x_video_downloader"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36 // ponytail: pinned; flutter.compileSdkVersion still resolves to 35, bump when Flutter default catches up
     ndkVersion = "27.0.12077973"
 
     compileOptions {
@@ -34,7 +34,7 @@ android {
         applicationId = "com.angriff.x_video_downloader"
         // minSdkVersion flutter.minSdkVersion  <-- invalid Groovy syntax auto-inserted; keep commented
         minSdkVersion(flutter.minSdkVersion)
-        targetSdk = flutter.targetSdkVersion
+        targetSdk = 36 // Play requires Android 16 (API 36); flutter.targetSdkVersion is still 35
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         manifestPlaceholders["appAuthRedirectScheme"] = "com.angriff.x_video_downloader"
