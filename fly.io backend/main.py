@@ -184,7 +184,7 @@ _USER_MESSAGES = {
     ErrorCode.MISSING_PARAMS: "Required information is missing. Please provide a valid URL.",
     ErrorCode.VIDEO_UNAVAILABLE: "This video is no longer available or has been removed.",
     ErrorCode.GEO_BLOCKED: "This video is not available in your region.",
-    ErrorCode.AUTH_REQUIRED: "This video requires authentication. Try uploading cookies in Settings.",
+    ErrorCode.AUTH_REQUIRED: "This post requires a login. Tap 'Log in' when prompted, or connect the account in Settings > Accounts, then retry.",
     ErrorCode.PRIVATE_VIDEO: "This video is private and cannot be downloaded.",
     ErrorCode.LIVE_STREAM: "Live streams cannot be downloaded. Wait until the stream ends.",
     ErrorCode.NO_FORMATS: "No downloadable formats found for this video.",
@@ -222,6 +222,10 @@ def _classify_error(error: Exception) -> tuple[str, str]:
     if "no video could be found in this tweet" in msg:
         return ErrorCode.NO_FORMATS, str(error)
     if "nsfw tweet" in msg:
+        return ErrorCode.AUTH_REQUIRED, str(error)
+    # Instagram: anonymous requests get an empty media response or an
+    # explicit login demand — logging in via the app fixes both.
+    if "empty media response" in msg or "login required" in msg:
         return ErrorCode.AUTH_REQUIRED, str(error)
     if "sign in to confirm" in msg or "bot" in msg:
         return ErrorCode.AUTH_REQUIRED, str(error)

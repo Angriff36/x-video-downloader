@@ -22,6 +22,7 @@ import 'download_schedule_screen.dart';
 import 'auth_service.dart';
 import 'auth_settings_screen.dart';
 import 'x_login_screen.dart';
+import 'instagram_login_screen.dart';
 import 'network_monitor.dart';
 import 'batch_import_screen.dart';
 import 'theme_provider.dart';
@@ -561,14 +562,15 @@ class _DownloaderScreenState extends State<DownloaderScreen>
     }
   }
 
-  /// If an X/Twitter probe fails in a way that logging in could fix and the
-  /// user has no saved X session, offer to log in and retry automatically.
+  /// If a probe fails in a way that logging in could fix and the user has
+  /// no saved session for that platform, offer to log in and retry
+  /// automatically. Supports X/Twitter and Instagram.
   Future<void> _maybePromptXLogin(
     ApiError error,
     String url, {
     bool chooseQuality = false,
   }) async {
-    // Codes X returns for restricted/NSFW/protected posts viewed anonymously.
+    // Codes returned for restricted/NSFW/protected posts viewed anonymously.
     const loginFixable = {
       'auth_required',
       'no_formats',
@@ -576,20 +578,26 @@ class _DownloaderScreenState extends State<DownloaderScreen>
       'private_video',
     };
     final platform = DownloadRecord.detectPlatform(url);
-    if (platform != 'X/Twitter') return;
+    final isX = platform == 'X/Twitter';
+    final isInstagram = platform == 'Instagram';
+    if (!isX && !isInstagram) return;
     if (!loginFixable.contains(error.errorCode)) return;
     if (await _authService.getValidAccessToken(platform) != null) return;
     if (!mounted) return;
 
+    final explanation = isX
+        ? 'X hides some posts (age-restricted, sensitive, or from protected '
+              'accounts) unless you are logged in. Log in to X and this '
+              'download will retry automatically.'
+        : 'Instagram blocks most downloads unless you are logged in. Log in '
+              'to Instagram and this download will retry automatically.';
+    final loginLabel = isX ? 'Log in to X' : 'Log in to Instagram';
+
     final shouldLogin = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('This post may be restricted'),
-        content: const Text(
-          'X hides some posts (age-restricted, sensitive, or from protected '
-          'accounts) unless you are logged in. Log in to X and this download '
-          'will retry automatically.',
-        ),
+        title: const Text('Login needed for this post'),
+        content: Text(explanation),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
@@ -597,7 +605,7 @@ class _DownloaderScreenState extends State<DownloaderScreen>
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Log in to X'),
+            child: Text(loginLabel),
           ),
         ],
       ),
@@ -606,7 +614,9 @@ class _DownloaderScreenState extends State<DownloaderScreen>
 
     final loggedIn = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
-        builder: (_) => XLoginScreen(authService: _authService),
+        builder: (_) => isX
+            ? XLoginScreen(authService: _authService)
+            : InstagramLoginScreen(authService: _authService),
       ),
     );
     if (loggedIn == true && mounted) {
