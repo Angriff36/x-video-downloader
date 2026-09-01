@@ -19,6 +19,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import io
+from html.parser import HTMLParser
 
 app = FastAPI()
 
@@ -409,38 +410,154 @@ def _detect_tiktok_content_type(url: str) -> str:
 
 # --- Custom Platform Extractors (bypass yt-dlp) ---
 
-def _extract_tiktok(url: str) -> dict | None:
-    """Extract TikTok video info via TikWM API (free, no auth, works from servers)."""
+
+class _MusicalDownParser(HTMLParser):
+    """Collect MusicalDown's dynamic form fields and downloadable media links."""
+
+    def __init__(self):
+        super().__init__()
+        self.url_field: str | None = None
+        self.hidden_fields: dict[str, str] = {}
+        self.links: list[tuple[str, str]] = []
+        self._link_href: str | None = None
+        self._link_text: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        values = dict(attrs)
+        if tag == 'input':
+            name = values.get('name')
+            if values.get('id') == 'link_url' and name:
+                self.url_field = name
+            if values.get('type') == 'hidden' and name:
+                self.hidden_fields[name] = values.get('value') or ''
+        elif tag == 'a' and values.get('href'):
+            self._link_href = values['href']
+            self._link_text = []
+
+    def handle_data(self, data: str) -> None:
+        if self._link_href:
+            self._link_text.append(data)
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag == 'a' and self._link_href:
+            label = ' '.join(' '.join(self._link_text).split())
+            self.links.append((self._link_href, label))
+            self._link_href = None
+            self._link_text = []
+
+
+def _extract_tiktok_musicaldown(url: str, video_id: str | None = None) -> dict | None:
+    """Use MusicalDown when TikWM blocks the backend's datacenter IP."""
     import requests as _req
+
+    headers = {
+        'User-Agent': (
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:126.0) '
+            'Gecko/20100101 Firefox/126.0'
+        ),
+        'Origin': 'https://musicaldown.com',
+        'Referer': 'https://musicaldown.com/en?ref=more',
+    }
+
     try:
-        # Resolve short/share URLs to the canonical URL so we can read the video ID.
-        # Covers vm./vt. short links AND the app's "Copy link" format: tiktok.com/t/XXXX
+        session = _req.Session()
+        form_response = session.get(
+            'https://musicaldown.com/en', headers=headers, timeout=15,
+        )
+        form_response.raise_for_status()
+
+        form_parser = _MusicalDownParser()
+        form_parser.feed(form_response.text)
+        if not form_parser.url_field:
+            logger.warning('[TikTok] MusicalDown form did not contain a URL field')
+            return None
+
+        form_data = dict(form_parser.hidden_fields)
+        form_data[form_parser.url_field] = url
+        form_data['verify'] = '1'
+        result_response = session.post(
+            'https://musicaldown.com/download',
+            data=form_data,
+            headers=headers,
+            timeout=25,
+        )
+        result_response.raise_for_status()
+
+        result_parser = _MusicalDownParser()
+        result_parser.feed(result_response.text)
+        mp4_links: list[tuple[str, str]] = []
+        for media_url, label in result_parser.links:
+            parsed = urllib.parse.urlparse(media_url)
+            normalized_label = label.lower()
+            if (
+                parsed.scheme == 'https'
+                and parsed.hostname
+                and parsed.hostname.endswith('.muscdn.app')
+                and 'download mp4' in normalized_label
+                and 'watermark' not in normalized_label
+            ):
+                mp4_links.append((media_url, normalized_label))
+
+        if not mp4_links:
+            logger.warning('[TikTok] MusicalDown returned no usable MP4 link')
+            return None
+
+        hd_link = next(
+            (media_url for media_url, label in mp4_links if '[hd]' in label),
+            None,
+        )
+        media_url = hd_link or mp4_links[0][0]
+        return {
+            'title': f'TikTok Video {video_id}' if video_id else 'TikTok Video',
+            'video_url': media_url,
+            'thumbnail': None,
+            'platform': 'TikTok',
+            'video_id': video_id or '',
+            'duration': None,
+        }
+    except Exception as exc:
+        logger.warning(f'[TikTok] MusicalDown extraction failed: {exc}')
+        return None
+
+
+def _extract_tiktok(url: str) -> dict | None:
+    """Extract TikTok video info, with a fallback for blocked server IPs."""
+    import requests as _req
+
+    original_url = url
+    try:
+        # Resolve short/share URLs when possible, but do not require it: TikTok may
+        # block HEAD requests even though a downstream extractor accepts the link.
         if ('vm.tiktok.com' in url or 'vt.tiktok.com' in url
                 or re.search(r'tiktok\.com/t/', url, re.IGNORECASE)):
             resp = _req.head(url, allow_redirects=True, timeout=10,
                              headers={'User-Agent': 'Mozilla/5.0 (Linux; Android 13) Chrome/115.0.0.0 Mobile'})
-            url = resp.url
+            if resp.url:
+                url = resp.url
+    except Exception as exc:
+        logger.info(f'[TikTok] Short-link resolution failed; trying providers directly: {exc}')
 
-        # Photo/slideshow posts have no video stream — TikWM and yt-dlp can't extract them.
-        if re.search(r'/photo/\d+', url):
-            logger.warning(f"[TikTok] Photo/slideshow post is not a video, cannot extract: {url}")
-            return None
+    # Photo/slideshow posts have no video stream in this endpoint.
+    if re.search(r'/photo/\d+', url):
+        logger.warning(f"[TikTok] Photo/slideshow post is not a video, cannot extract: {url}")
+        return None
 
-        # Extract video ID
-        video_id = None
-        m = re.search(r'/video/(\d+)', url)
-        if m:
-            video_id = m.group(1)
-        if not video_id:
-            logger.warning(f"[TikTok] Could not extract video ID from {url}")
-            return None
+    video_id = None
+    match = re.search(r'/video/(\d+)', url)
+    if match:
+        video_id = match.group(1)
 
-        # TikWM needs a URL without the @username — build a clean URL
-        clean_url = f"https://www.tiktok.com/@/video/{video_id}"
+    # TikWM accepts IDs in this canonical form. For unresolved short links, pass
+    # the original URL and let TikWM resolve it itself.
+    tikwm_url = (
+        f"https://www.tiktok.com/@/video/{video_id}"
+        if video_id else original_url
+    )
 
+    try:
         # Call TikWM API via GET
         resp = _req.get("https://www.tikwm.com/api/", params={
-            'url': clean_url,
+            'url': tikwm_url,
             'hd': '1',
         }, timeout=20, headers={
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
@@ -449,43 +566,36 @@ def _extract_tiktok(url: str) -> dict | None:
 
         if resp.status_code != 200:
             logger.warning(f"[TikTok] TikWM API returned {resp.status_code}")
-            return None
+        else:
+            data = resp.json()
+            if data.get('code') == 0 and data.get('data'):
+                video = data['data']
+                video_url = video.get('hdplay') or video.get('play') or video.get('wmplay')
+                if video_url:
+                    if video_url.startswith('//'):
+                        video_url = 'https:' + video_url
+                    elif video_url.startswith('/'):
+                        video_url = 'https://www.tikwm.com' + video_url
 
-        data = resp.json()
-        if data.get('code') != 0 or not data.get('data'):
-            logger.warning(f"[TikTok] TikWM API error: {data.get('msg', 'unknown')}")
-            return None
+                    thumbnail = video.get('cover') or video.get('origin_cover')
+                    if thumbnail and thumbnail.startswith('/'):
+                        thumbnail = 'https://www.tikwm.com' + thumbnail
+                    resolved_id = str(video.get('id') or video_id or '')
+                    return {
+                        'title': video.get('title', 'TikTok Video'),
+                        'video_url': video_url,
+                        'thumbnail': thumbnail,
+                        'platform': 'TikTok',
+                        'video_id': resolved_id,
+                        'duration': video.get('duration'),
+                    }
+            else:
+                logger.warning(f"[TikTok] TikWM API error: {data.get('msg', 'unknown')}")
+    except Exception as exc:
+        logger.warning(f"[TikTok] TikWM extraction failed: {exc}")
 
-        video = data['data']
-        # TikWM returns relative URLs like /video/media/play/ID.mp4
-        video_url = video.get('hdplay') or video.get('play') or video.get('wmplay')
-        if not video_url:
-            logger.warning("[TikTok] TikWM returned no video URL")
-            return None
-
-        # Prepend CDN base if relative URL
-        if video_url.startswith('//'):
-            video_url = 'https:' + video_url
-        elif video_url.startswith('/'):
-            video_url = 'https://www.tikwm.com' + video_url
-
-        title = video.get('title', 'TikTok Video')
-        thumbnail = video.get('cover') or video.get('origin_cover')
-        if thumbnail and thumbnail.startswith('/'):
-            thumbnail = 'https://www.tikwm.com' + thumbnail
-        duration = video.get('duration')
-
-        return {
-            'title': title,
-            'video_url': video_url,
-            'thumbnail': thumbnail,
-            'platform': 'TikTok',
-            'video_id': str(video_id),
-            'duration': duration,
-        }
-    except Exception as e:
-        logger.error(f"[TikTok] TikWM extraction failed: {e}")
-        return None
+    logger.info('[TikTok] Falling back to MusicalDown')
+    return _extract_tiktok_musicaldown(original_url, video_id)
 
 
 def _extract_instagram(url: str, session_id: str | None = None) -> dict | None:
@@ -2967,4 +3077,3 @@ def download_subtitles(
     except Exception as e:
         error_code, raw_msg = _classify_error(e)
         return _error_response(error_code, raw_msg)
-
