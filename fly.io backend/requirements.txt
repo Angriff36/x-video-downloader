@@ -2,6 +2,10 @@ fastapi==0.115.12
 uvicorn==0.34.0
 python-multipart
 requests
+# curl_cffi gives yt-dlp browser TLS impersonation. Vimeo (and other strict
+# sites) reject plain-urllib requests on their TLS fingerprint without it.
+# Range must stay inside what yt-dlp's _curlcffi handler accepts.
+curl_cffi>=0.10,<0.13
 # NOTE: yt-dlp is intentionally NOT pinned here. It is installed in its own
 # Docker layer (see Dockerfile) so the nightly deploy can re-pull the latest
 # master each night to keep up with site changes. Adding it back here would

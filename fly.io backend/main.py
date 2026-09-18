@@ -139,6 +139,7 @@ class ErrorCode:
     MISSING_PARAMS = "missing_params"
     VIDEO_UNAVAILABLE = "video_unavailable"
     GEO_BLOCKED = "geo_blocked"
+    SITE_BLOCKED = "site_blocked"
     AUTH_REQUIRED = "auth_required"
     PRIVATE_VIDEO = "private_video"
     LIVE_STREAM = "live_stream"
@@ -164,6 +165,7 @@ _ERROR_STATUS_MAP = {
     ErrorCode.MISSING_PARAMS: 400,
     ErrorCode.VIDEO_UNAVAILABLE: 404,
     ErrorCode.GEO_BLOCKED: 403,
+    ErrorCode.SITE_BLOCKED: 403,
     ErrorCode.AUTH_REQUIRED: 403,
     ErrorCode.PRIVATE_VIDEO: 403,
     ErrorCode.LIVE_STREAM: 400,
@@ -185,6 +187,7 @@ _USER_MESSAGES = {
     ErrorCode.MISSING_PARAMS: "Required information is missing. Please provide a valid URL.",
     ErrorCode.VIDEO_UNAVAILABLE: "This video is no longer available or has been removed.",
     ErrorCode.GEO_BLOCKED: "This video is not available in your region.",
+    ErrorCode.SITE_BLOCKED: "This site is currently blocking downloads. Nothing is wrong with your link — try again in a few days.",
     ErrorCode.AUTH_REQUIRED: "This post requires a login. Tap 'Log in' when prompted, or connect the account in Settings > Accounts, then retry.",
     ErrorCode.PRIVATE_VIDEO: "This video is private and cannot be downloaded.",
     ErrorCode.LIVE_STREAM: "Live streams cannot be downloaded. Wait until the stream ends.",
@@ -218,6 +221,12 @@ def _classify_error(error: Exception) -> tuple[str, str]:
     error_type = type(error).__name__
 
     # yt-dlp specific patterns
+    # Site-side anti-bot block (Vimeo and friends). Emitted either because the
+    # impersonation dependency is missing, or because the site rejected the
+    # impersonated request outright. Deterministic - never retry it, and never
+    # let it fall through to the generic "our end" server error.
+    if "tls fingerprint" in msg or "when using impersonate target" in msg:
+        return ErrorCode.SITE_BLOCKED, str(error)
     # Twitter/X: emitted for text-only tweets AND for restricted/NSFW tweets
     # viewed without auth — deterministic, so never retry it.
     if "no video could be found in this tweet" in msg:
