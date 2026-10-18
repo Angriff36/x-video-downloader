@@ -925,10 +925,14 @@ def _get_headers(url: str) -> dict:
         referer = "https://www.instagram.com/"
     elif "tiktok.com" in lower_url:
         referer = "https://www.tiktok.com/"
+    elif "bilibili.com" in lower_url or "b23.tv" in lower_url:
+        referer = "https://www.bilibili.com/"
     else:
         referer = "https://www.youtube.com/"
 
-    if "x.com" in lower_url or "twitter.com" in lower_url or "vimeo.com" in lower_url:
+    if ("x.com" in lower_url or "twitter.com" in lower_url or "vimeo.com" in lower_url
+            or "bilibili.com" in lower_url or "b23.tv" in lower_url):
+        # Bilibili redirects mobile UAs to m.bilibili.com, which yt-dlp can't extract.
         user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     elif "instagram.com" in lower_url:
         # Instagram requires specific headers for better compatibility
@@ -1240,6 +1244,7 @@ def _direct_stream_response(
     format_id: Optional[str],
     filename_template: Optional[str],
     direct: bool = False,
+    index: Optional[int] = None,
 ) -> Response | None:
     is_x = _host_matches(_url_host(url), 'x.com', 'twitter.com')
 
@@ -1253,8 +1258,14 @@ def _direct_stream_response(
         'socket_timeout': 30,
         'noplaylist': True,
     }
+    if index is not None:
+        # One item of a multi-video post (thread, carousel, album).
+        ydl_opts['noplaylist'] = False
+        ydl_opts['playlist_items'] = str(index + 1)
     if "dailymotion.com" in url:
         ydl_opts['force_generic_extractor'] = True
+    elif "instagram.com" in url and index is not None:
+        ydl_opts['extractor_args'] = {'instagram': ['player_client=android']}
     elif "tiktok.com" in url or "vm.tiktok.com" in url:
         ydl_opts['extractor_args'] = ydl_opts.get('extractor_args', {})
         ydl_opts['extractor_args']['tiktok'] = [
@@ -1266,6 +1277,10 @@ def _direct_stream_response(
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=False)
 
+    if info and index is not None:
+        entries = [e for e in (info.get('entries') or []) if e is not None]
+        if entries:
+            info = entries[0]
     if not info:
         return None
 
@@ -1275,13 +1290,20 @@ def _direct_stream_response(
         selected = _choose_direct_format(info, format_id)
     if not selected or not selected.get('url'):
         return None
+    if selected.get('protocol') not in (None, 'http', 'https') or '.m3u8' in selected['url']:
+        return None  # HLS/DASH manifests need the yt-dlp download path
+    if selected.get('ext') == 'html':
+        return None  # generic extractor fell back to a web page, not media
+    has_video = any(f.get('vcodec') not in (None, 'none') for f in info.get('formats') or [])
+    if not format_id and has_video and selected.get('vcodec') == 'none':
+        return None  # video and audio are split: needs the server-side merge
 
     ext = selected.get('ext') or info.get('ext') or 'mp4'
     media_type = _media_type_for_ext(ext)
     # Audio-only formats can still use mp4/webm containers.
     if selected.get('vcodec') == 'none' and not media_type.startswith('audio/'):
         media_type = 'audio/webm' if ext == 'webm' else 'audio/mp4'
-    base_name = _resolve_filename_template(template, info, url, format_id=format_id, ext=ext)
+    base_name = _resolve_filename_template(template, info, url, format_id=format_id, ext=ext, index=index)
     filename = f"{base_name}.{ext}"
 
     stream_headers = dict(_get_headers(url))
@@ -1297,10 +1319,12 @@ def _direct_stream_response(
         for sensitive in ('Cookie', 'cookie', 'Authorization', 'x-csrf-token'):
             stream_headers.pop(sensitive, None)
 
-    if direct and selected.get('protocol') in (None, 'http', 'https'):
+    if direct:
         direct_response = _direct_url_response(selected['url'], stream_headers, filename, media_type)
         if direct_response is not None:
             return direct_response
+    if index is not None:
+        return None  # group items keep the server-side download path
 
     response_headers = {
         'Content-Disposition': _build_content_disposition(filename),
@@ -2000,6 +2024,7 @@ def download_video_by_index(
     index: int = Query(...),
     format_id: Optional[str] = Query(None),
     filename_template: Optional[str] = Query(None),
+    direct: bool = Query(False),
 ):
     """Download a specific video from a media group by its index position."""
     if not url or not url.strip():
@@ -2015,6 +2040,17 @@ def download_video_by_index(
         url = _normalize_tiktok_url(url)
 
     try:
+        if direct:
+            try:
+                direct_response = _direct_stream_response(
+                    url, request=request, format_id=format_id,
+                    filename_template=filename_template, direct=True, index=index,
+                )
+            except Exception as e:
+                logger.info(f"Direct link for group item failed, using server download: {e}")
+                direct_response = None
+            if direct_response is not None:
+                return direct_response
         return _download_index_with_retry(
             url, index,
             request=request,

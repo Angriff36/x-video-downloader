@@ -384,14 +384,8 @@ class DownloadQueueManager extends ChangeNotifier {
       final client = http.Client();
       activeDownload.client = client;
 
-      // Only /download supports direct mode; group items stay server-streamed.
-      final response = item.videoIndex == null
-          ? await sendDownloadRequest(
-              client, endpoint, headers, const Duration(seconds: 120))
-          : await client
-              .send(http.Request('GET', Uri.parse(endpoint))
-                ..headers.addAll(headers))
-              .timeout(const Duration(seconds: 120));
+      final response = await sendDownloadRequest(
+          client, endpoint, headers, const Duration(seconds: 120));
 
       if (activeDownload.cancelled) {
         client.close();

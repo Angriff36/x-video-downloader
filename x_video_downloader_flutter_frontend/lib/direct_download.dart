@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
-/// Sends a backend `/download` request in direct mode. When the server answers
+/// Sends a backend `/download` or `/download-index` request in direct mode. When the server answers
 /// with the source media URL, the phone fetches the file straight from the
 /// source site, so the video bytes skip (and are not billed on) the server.
 /// If that fetch fails, it repeats the normal request and the server streams
