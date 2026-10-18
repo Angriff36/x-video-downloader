@@ -14,6 +14,7 @@ import 'download_record.dart';
 import 'filename_template.dart';
 import 'network_monitor.dart';
 import 'queue_item.dart';
+import 'direct_download.dart';
 
 const String _backendBaseUrl = String.fromEnvironment(
   'BACKEND_BASE_URL',
@@ -373,20 +374,24 @@ class DownloadQueueManager extends ChangeNotifier {
     _activeDownloads[id] = activeDownload;
 
     try {
-      final request = http.Request('GET', Uri.parse(endpoint));
-
       // Attach platform auth token if available
+      final headers = <String, String>{};
       final platform = _queue[index].platform;
       final authToken = await _getAuthTokenForPlatform(platform);
       if (authToken != null) {
-        request.headers['X-Auth-Token'] = authToken;
+        headers['X-Auth-Token'] = authToken;
       }
       final client = http.Client();
       activeDownload.client = client;
 
-      final response = await client
-          .send(request)
-          .timeout(const Duration(seconds: 120));
+      // Only /download supports direct mode; group items stay server-streamed.
+      final response = item.videoIndex == null
+          ? await sendDownloadRequest(
+              client, endpoint, headers, const Duration(seconds: 120))
+          : await client
+              .send(http.Request('GET', Uri.parse(endpoint))
+                ..headers.addAll(headers))
+              .timeout(const Duration(seconds: 120));
 
       if (activeDownload.cancelled) {
         client.close();

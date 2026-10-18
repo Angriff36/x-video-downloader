@@ -34,6 +34,7 @@ import 'download_analytics_screen.dart';
 import 'storage_management_screen.dart';
 import 'storage_service.dart';
 import 'video_url_patterns.dart';
+import 'direct_download.dart';
 import 'dart:async';
 
 /// Extracts the first video URL from text, or returns null.
@@ -920,16 +921,19 @@ class _DownloaderScreenState extends State<DownloaderScreen>
     final client = http.Client();
 
     try {
-      final request = http.Request('GET', Uri.parse(endpoint));
       // Attach auth token if available for the platform
+      final headers = <String, String>{};
       final platform = DownloadRecord.detectPlatform(url);
       final authToken = await _authService.getValidAccessToken(platform);
       if (authToken != null) {
-        request.headers['X-Auth-Token'] = authToken;
+        headers['X-Auth-Token'] = authToken;
       }
-      final response = await client
-          .send(request)
-          .timeout(const Duration(seconds: 180));
+      final response = await sendDownloadRequest(
+        client,
+        endpoint,
+        headers,
+        const Duration(seconds: 180),
+      );
 
       if (response.statusCode != 200 && response.statusCode != 206) {
         final body = await response.stream.bytesToString();

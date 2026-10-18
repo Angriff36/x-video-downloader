@@ -1212,12 +1212,35 @@ def _stream_from_requests(resp, chunk_size: int = 65536):
         resp.close()
 
 
+def _direct_url_response(media_url: str, headers: dict, filename: str, media_type: str) -> JSONResponse | None:
+    """Hand the app the media URL so the phone fetches it from the source CDN;
+    those bytes then never pass through (or get billed on) this server.
+    None when the URL is locked to this server's IP (YouTube puts ip= in the
+    query or an /ip/ path segment) or is a playlist manifest, not a file."""
+    parts = urllib.parse.urlsplit(media_url)
+    if 'ip' in urllib.parse.parse_qs(parts.query) or '/ip/' in parts.path:
+        return None
+    if '.m3u8' in parts.path or '.mpd' in parts.path or '/manifest/' in parts.path:
+        return None
+    safe_headers = {
+        k: v for k, v in headers.items()
+        if k.lower() not in ('cookie', 'authorization', 'x-csrf-token')
+    }
+    return JSONResponse({
+        'direct_url': media_url,
+        'headers': safe_headers,
+        'filename': filename,
+        'media_type': media_type,
+    })
+
+
 def _direct_stream_response(
     url: str,
     request: Request,
     format_id: Optional[str],
     filename_template: Optional[str],
-) -> StreamingResponse | None:
+    direct: bool = False,
+) -> Response | None:
     is_x = _host_matches(_url_host(url), 'x.com', 'twitter.com')
 
     template = filename_template or DEFAULT_FILENAME_TEMPLATE
@@ -1273,6 +1296,11 @@ def _direct_stream_response(
     ):
         for sensitive in ('Cookie', 'cookie', 'Authorization', 'x-csrf-token'):
             stream_headers.pop(sensitive, None)
+
+    if direct and selected.get('protocol') in (None, 'http', 'https'):
+        direct_response = _direct_url_response(selected['url'], stream_headers, filename, media_type)
+        if direct_response is not None:
+            return direct_response
 
     response_headers = {
         'Content-Disposition': _build_content_disposition(filename),
@@ -1644,6 +1672,7 @@ def download_video(
     subtitle_lang: Optional[str] = Query(None),
     subtitle_format: Optional[str] = Query(None),
     embed_subtitles: bool = Query(False),
+    direct: bool = Query(False),
 ):
     if not url or not url.strip():
         return _error_response(ErrorCode.MISSING_PARAMS)
@@ -1671,11 +1700,16 @@ def download_video(
                 title = extracted.get('title', 'video')
                 safe_name = _sanitize_filename(title, max_length=150)
                 filename = f"{safe_name}.mp4"
-
-                stream_resp = _req.get(video_url, stream=True, timeout=30, headers={
+                tiktok_headers = {
                     'User-Agent': 'Mozilla/5.0 (Linux; Android 13) Chrome/115.0.0.0 Mobile',
                     'Referer': 'https://www.tiktok.com/',
-                })
+                }
+                if direct:
+                    direct_response = _direct_url_response(video_url, tiktok_headers, filename, 'video/mp4')
+                    if direct_response is not None:
+                        return direct_response
+
+                stream_resp = _req.get(video_url, stream=True, timeout=30, headers=tiktok_headers)
                 stream_resp.raise_for_status()
 
                 return StreamingResponse(
@@ -1699,6 +1733,7 @@ def download_video(
                 request=request,
                 format_id=format_id,
                 filename_template=filename_template,
+                direct=direct,
             )
             if direct_response is not None:
                 return direct_response
