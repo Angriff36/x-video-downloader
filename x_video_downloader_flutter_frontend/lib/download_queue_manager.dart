@@ -339,6 +339,12 @@ class DownloadQueueManager extends ChangeNotifier {
     final index = _queue.indexWhere((i) => i.id == id);
     if (index == -1) return;
 
+    if (DownloadRecord.isYouTube(item.url)) {
+      await _handleDownloadError(id, DownloadRecord.youTubeNotSupported,
+          'unsupported_platform', false);
+      return;
+    }
+
     // Update to downloading
     _queue[index] = item.copyWith(
       status: QueueItemStatus.downloading,

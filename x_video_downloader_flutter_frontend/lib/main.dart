@@ -480,6 +480,13 @@ class _DownloaderScreenState extends State<DownloaderScreen>
       });
       return;
     }
+    if (DownloadRecord.isYouTube(url)) {
+      setState(() {
+        status = DownloadRecord.youTubeNotSupported;
+        _isProbing = false;
+      });
+      return;
+    }
 
     setState(() {
       _isProbing = true;
@@ -850,6 +857,12 @@ class _DownloaderScreenState extends State<DownloaderScreen>
     if (!url.startsWith('http://') && !url.startsWith('https://')) {
       setState(() {
         status = "Please enter a valid URL starting with http:// or https://";
+      });
+      return;
+    }
+    if (DownloadRecord.isYouTube(url)) {
+      setState(() {
+        status = DownloadRecord.youTubeNotSupported;
       });
       return;
     }

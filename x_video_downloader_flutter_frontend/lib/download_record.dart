@@ -108,6 +108,10 @@ class DownloadRecord {
   ];
 
   /// Detect platform from URL by parsed hostname.
+  /// Google Play rejects the app for YouTube downloads (YouTube ToS).
+  static bool isYouTube(String url) => detectPlatform(url) == 'YouTube';
+  static const youTubeNotSupported = 'YouTube downloads are not supported.';
+
   static String detectPlatform(String url) {
     final host = Uri.tryParse(url.trim())?.host.toLowerCase() ?? '';
     if (host.isEmpty) return 'Other';

@@ -30,7 +30,6 @@ class _FilenameTemplateSettingsScreenState
   final Map<String, bool> _platformExpanded = {};
 
   static const _platforms = [
-    'YouTube',
     'Instagram',
     'TikTok',
     'X/Twitter',

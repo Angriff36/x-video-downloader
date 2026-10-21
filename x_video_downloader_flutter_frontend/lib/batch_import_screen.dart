@@ -286,7 +286,7 @@ class _BatchImportScreenState extends State<BatchImportScreen> {
             maxLines: 4,
             decoration: InputDecoration(
               hintText: 'Paste one URL per line...\n'
-                  'Supports: X/Twitter, YouTube, Instagram, TikTok, Facebook, Vimeo, Reddit, Dailymotion',
+                  'Supports: X/Twitter, Instagram, TikTok, Facebook, Vimeo, Reddit, Dailymotion',
               border: const OutlineInputBorder(),
               suffixIcon: IconButton(
                 icon: const Icon(Icons.clear, size: 18),

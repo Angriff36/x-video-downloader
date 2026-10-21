@@ -183,7 +183,7 @@ _ERROR_STATUS_MAP = {
 # User-friendly messages (safe to show in frontend)
 _USER_MESSAGES = {
     ErrorCode.INVALID_URL: "The URL you provided is not valid. Please check and try again.",
-    ErrorCode.UNSUPPORTED_PLATFORM: "This platform is not supported. We support YouTube, X/Twitter, Instagram, TikTok, Vimeo, and more.",
+    ErrorCode.UNSUPPORTED_PLATFORM: "This site is not supported. We support X/Twitter, Instagram, TikTok, and more.",
     ErrorCode.MISSING_PARAMS: "Required information is missing. Please provide a valid URL.",
     ErrorCode.VIDEO_UNAVAILABLE: "This video is no longer available or has been removed.",
     ErrorCode.GEO_BLOCKED: "This video is not available in your region.",
@@ -886,6 +886,16 @@ def _error_response(error_code: str, raw_message: str | None = None, status_over
 
 
 # --- Retry logic with exponential backoff ---
+
+@app.middleware("http")
+async def _block_youtube(request: Request, call_next):
+    """Google Play rejects the app for YouTube downloads (YouTube ToS), so
+    refuse YouTube links on every endpoint, for every app version."""
+    target = request.query_params.get('url')
+    if target and _host_matches(_url_host(target), 'youtube.com', 'youtu.be', 'youtube-nocookie.com'):
+        return _error_response(ErrorCode.UNSUPPORTED_PLATFORM)
+    return await call_next(request)
+
 
 def _retry_with_backoff(max_retries: int = 2, base_delay: float = 1.0, max_delay: float = 8.0):
     """Decorator that retries a function on transient failures with exponential backoff.

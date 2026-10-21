@@ -6,7 +6,6 @@ final videoUrlPattern = RegExp(
   // Path-specific patterns for the big platforms (avoids false positives
   // like profile pages).
   r'(?:www\.)?(?:x\.com|twitter\.com)/\w+/status/\d+'
-  r'|(?:www\.|m\.)?(?:youtube\.com/(?:watch\?v=|shorts/|embed/)|youtu\.be/)'
   r'|(?:www\.)?(?:instagram\.com/(?:reel|p|tv)/)'
   r'|(?:www\.|vm\.|vt\.)?(?:tiktok\.com/)'
   r'|(?:www\.|m\.)?(?:facebook\.com/(?:watch|reel|share|videos/)|fb\.watch/)'

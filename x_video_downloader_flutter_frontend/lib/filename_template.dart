@@ -7,7 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 ///
 /// Supported placeholders:
 ///   {title}      - Video title (sanitized for filesystem)
-///   {platform}   - Platform name (YouTube, Instagram, TikTok, etc.)
+///   {platform}   - Platform name (X/Twitter, Instagram, TikTok, etc.)
 ///   {uploader}   - Channel/uploader name
 ///   {date}       - Upload date as YYYY-MM-DD
 ///   {year}       - Upload year
@@ -115,7 +115,7 @@ class FilenameTemplate {
   /// List of all available placeholders with descriptions.
   static const placeholders = <PlaceholderInfo>[
     PlaceholderInfo(tag: 'title', description: 'Video title'),
-    PlaceholderInfo(tag: 'platform', description: 'Platform name (YouTube, Instagram, etc.)'),
+    PlaceholderInfo(tag: 'platform', description: 'Platform name (X/Twitter, Instagram, etc.)'),
     PlaceholderInfo(tag: 'uploader', description: 'Channel/uploader name'),
     PlaceholderInfo(tag: 'date', description: 'Upload date (YYYY-MM-DD)'),
     PlaceholderInfo(tag: 'year', description: 'Upload year'),
@@ -143,7 +143,7 @@ class FilenameTemplate {
   static String preview(String template) {
     return template
         .replaceAll('{title}', 'Amazing Video Title')
-        .replaceAll('{platform}', 'YouTube')
+        .replaceAll('{platform}', 'TikTok')
         .replaceAll('{uploader}', 'ChannelName')
         .replaceAll('{date}', '2025-01-15')
         .replaceAll('{year}', '2025')
